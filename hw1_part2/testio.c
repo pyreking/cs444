@@ -12,6 +12,8 @@
 
 #include <stdio.h>              /* for lib's device # defs, protos */
 #include "io_public.h"		/* for our packages devs, API prototypes */
+#include "tty_public.h"
+#include "tty.h"
 
 #define MILLION 1000000
 #define DELAYLOOPCOUNT (1000000000)
@@ -42,45 +44,45 @@ int main(void)
   kprintf("Running with device TTY%d\n",ldev);
   /* Now have a usable device to talk to with i/o package-- */
 
-  ioinit();  /* Initialize devices */
+  ttyinit(ldev);  /* Initialize devices */
   kprintf("\nTrying simple write(4 chars)...\n");
-  got = write(ldev,"hi!\n",4);
+  got = ttywrite(ldev,"hi!\n",4);
   kprintf("write of 4 returned %d\n",got);
   delay();  /* time for output to finish, once write-behind is working */
 
   kprintf("Trying longer write (9 chars)\n");
-  got = write(ldev, "abcdefghi", 9);
+  got = ttywrite(ldev, "abcdefghi", 9);
   kprintf("write of 9 returned %d\n",got);
   delay();  /* time for output to finish, once write-behind is working */
 
   for (i = 0; i < BUFLEN; i++)
       buf[i] = 'A'+ i/2;
   kprintf("\nTrying write of %d-char string...\n", BUFLEN);
-  got = write(ldev, buf, BUFLEN);
+  got = ttywrite(ldev, buf, BUFLEN);
   kprintf("\nwrite returned %d\n", got);
   delay();
 
   kprintf("\nType 10 chars input to test typeahead while looping for delay...\n");
   delay();
-  got = read(ldev, buf, 10);	/* should wait for all 10 chars, once fixed */
+  got = ttyread(ldev, buf, 10);	/* should wait for all 10 chars, once fixed */
   kprintf("\nGot %d chars into buf. Trying write of buf...\n", got);
-  write(ldev, buf, got);
+  ttywrite(ldev, buf, got);
 
   kprintf("\nTrying another 10 chars read right away...\n");
-  got = read(ldev, buf, 10);	/* should wait for input, once fixed */
+  got = ttyread(ldev, buf, 10);	/* should wait for input, once fixed */
   kprintf("\nGot %d chars on second read\n",got);
   if (got == 0) 
       kprintf("nothing in buffer\n");	/* expected result until fixed */
   else 
-      write(ldev, buf, got);	/* should write 10 chars once fixed */
+      ttywrite(ldev, buf, got);	/* should write 10 chars once fixed */
 
   kprintf("\n\nNow turning echo off--\n");
   control(ldev, ECHOCONTROL, 0);
   kprintf("\nType 20 chars input, note lack of echoes...\n");
   delay();
-  got = read(ldev, buf, 20);
+  got = ttyread(ldev, buf, 20);
   kprintf("\nTrying write of buf...\n");
-  write(ldev, buf, got);
+  ttywrite(ldev, buf, got);
   kprintf("\nAsked for 20 characters; got %d\n", got);
   return 0;
 }
