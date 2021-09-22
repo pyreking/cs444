@@ -13,6 +13,7 @@
 #include "ioconf.h"
 #include "tty_public.h"
 #include "tty.h"
+#include "queue/queue.h"
 
 struct tty ttytab[NTTYS];        /* software params/data for each SLU dev */
 
@@ -22,7 +23,10 @@ struct tty ttytab[NTTYS];        /* software params/data for each SLU dev */
 #define BUFLEN 20
 
 char *debug_log_area = (char *)DEBUG_AREA;
-char *debug_record;  /* current pointer into log area */ 
+char *debug_record;  /* current pointer into log area */
+
+Queue read_queue, write_queue;
+Queue *read_queue_ptr, *write_queue_ptr;
 
 /* tell C about the assembler shell routines */
 extern void irq3inthand(void), irq4inthand(void);
@@ -70,6 +74,12 @@ void ttyinit(int dev)
   tty->tout = 0;
   tty->tnum = 0;              /* initialize counter */
 
+  read_queue_ptr = &read_queue;
+  init_queue(read_queue_ptr, MAXBUF);
+
+  write_queue_ptr = &write_queue;
+  init_queue(write_queue_ptr, MAXBUF);
+
   /* enable interrupts on receiver */
   outpt(baseport+UART_IER, UART_IER_RDI); /* RDI = receiver data int */
 }
@@ -106,11 +116,11 @@ int ttyread(int dev, char *buf, int nchar)
   for (i = 0; i < copychars; i++) {
     saved_eflags = get_eflags();
     cli();			/* disable ints in CPU */
-    buf[i] = tty->rbuf[tty->rout++];      /* copy from ibuf to user buf */
+    buf[i] = dequeue(read_queue_ptr);      /* copy from ibuf to user buf */
    sprintf(log, ">%c", buf[i]);
    debug_log(log);
-   tty->rnum--;                          /* decrement count */
-    if (tty->rout >= MAXBUF) tty->rout = 0;
+   //tty->rnum--;                          /* decrement count */
+    //if (tty->rout >= MAXBUF) tty->rout = 0;
     set_eflags(saved_eflags);     /* back to previous CPU int. status */
   }
 
@@ -141,9 +151,12 @@ int ttywrite(int dev, char *buf, int nchar)
   for (i = 0; i < nchar; i++) {
     sprintf(log,"<%c", buf[i]); /* record input char-- */
     debug_log(log);
-    tty->tbuf[tty->tin++] = buf[i];
-    tty->tnum++;
-    if (tty->tin >= MAXBUF) tty->tin = 0;
+    if (queuecount(write_queue_ptr) < MAXBUF) {
+      enqueue(write_queue_ptr, buf[i]);
+    }
+    //tty->tbuf[tty->tin++] = buf[i];
+    //tty->tnum++;
+    //if (tty->tin >= MAXBUF) tty->tin = 0;
     putc(dev+1, buf[i]);	/* use lib for now--replace this! */
   }
   return nchar;
@@ -194,11 +207,11 @@ void irqinthandc(int dev){
   pic_end_int();                /* notify PIC that its part is done */
   debug_log("*");
   ch = inpt(baseport+UART_RX);	/* read char, ack the device */
-  if (tty->rnum < MAXBUF) {   /* if space left in ring buffer */
-    tty->rnum++;                 /* increase character count */
-    tty->rbuf[tty->rin++] = ch; /* put char in ibuf, step ptr */
-    if (tty->rin >= MAXBUF)     /* check if we need to wrap-around */
-      tty->rin = 0;              /* and reset as appropriate */
+  if (queuecount(read_queue_ptr) < MAXBUF) {   /* if space left in ring buffer */
+    // tty->rnum++;                 /* increase character count */
+    enqueue(read_queue_ptr, ch); /* put char in ibuf, step ptr */
+   // if (tty->rin >= MAXBUF)     /* check if we need to wrap-around */
+    //  tty->rin = 0;              /* and reset as appropriate */
   }
   if (tty->echoflag)             /* if echoing wanted */
     outpt(baseport+UART_TX,ch);   /* echo char: see note above */
