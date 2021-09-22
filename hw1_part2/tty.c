@@ -112,7 +112,7 @@ int ttyread(int dev, char *buf, int nchar)
   baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
   tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
 
-  copychars = min(nchar, tty->rnum);      /* chars to copy from buffer */
+  copychars = min(nchar, queuecount(read_queue_ptr));      /* chars to copy from buffer */
   for (i = 0; i < copychars; i++) {
     saved_eflags = get_eflags();
     cli();			/* disable ints in CPU */
