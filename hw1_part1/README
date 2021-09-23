@@ -1,4 +1,10 @@
-Files for CS444 device-independent i/o package for SAPC
+Submission: Austin Guiney
+
+Files:
+remgdb-testio_mod-aguiney.script: Typescript file for running testio.lnx with remote gdb.
+testio_mod-aguiney.script: Typescript file for running testio.lnx.
+
+Files for CS444 device-independent i/o package for SAPC:
 
 io_public.h--applications-level header: dev indep i/o API protos
 tty_public.h--app-level header: tty-specific info
