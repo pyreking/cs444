@@ -9,6 +9,7 @@
 
 #ifndef TTY_H
 #define TTY_H
+#include "queue/queue.h"
 
 #define MAXBUF 6
 
@@ -22,6 +23,8 @@ struct tty {
   int tin;                    /* index into transmit buffer */
   int tout;                   /* index out of transmit buffer */
   int tnum;                   /* number of characters in xmit buffer */
+  Queue read_queue;
+  Queue write_queue;
 };
 
 extern struct tty ttytab[];
