@@ -73,6 +73,7 @@ void ttyinit(int dev)
 
   init_queue(&(tty->read_queue), MAXBUF);
   init_queue(&(tty->write_queue), MAXBUF);
+  init_queue(&(tty->echo_queue), MAXBUF);
 
   /* enable interrupts on receiver */
   outpt(baseport+UART_IER, UART_IER_RDI); /* RDI = receiver data int */
@@ -139,22 +140,38 @@ int ttywrite(int dev, char *buf, int nchar)
 {
   int baseport;
   struct tty *tty;
-  int i;
+  int i = 0;
   char log[BUFLEN];
+  int saved_eflags;
 
   baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
   tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
 
-  for (i = 0; i < nchar; i++) {
-    sprintf(log,"<%c", buf[i]); /* record input char-- */
-    debug_log(log);
+  saved_eflags = get_eflags();
+  cli();
+
+  while (i < nchar && queuecount(&(tty->write_queue)) < MAXBUF) {
+    enqueue(&(tty->write_queue), buf[i]);
+    i++;
+  }
+
+  outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+  set_eflags(saved_eflags);
+
+  while (i < nchar) {
+    saved_eflags = get_eflags();
+    cli();			/* disable ints in CPU */
+
     if (queuecount(&(tty->write_queue)) < MAXBUF) {
       enqueue(&(tty->write_queue), buf[i]);
+      sprintf(log,"<%c", buf[i]); /* record input char-- */
+      debug_log(log);
+      i++;
     }
-    //tty->tnum++;
-    //if (tty->tin >= MAXBUF) tty->tin = 0;
-    putc(dev+1, buf[i]);	/* use lib for now--replace this! */
+
+    set_eflags(saved_eflags); 
   }
+
   return nchar;
 }
 
@@ -196,21 +213,37 @@ void irq3inthandc()
 }                              
 
 void irqinthandc(int dev){  
-  int ch;
+  int ch, iir;
   struct tty *tty = (struct tty *)(devtab[dev].dvdata);
   int baseport = devtab[dev].dvbaseport; /* hardware i/o port */;
 
   pic_end_int();                /* notify PIC that its part is done */
   debug_log("*");
-  ch = inpt(baseport+UART_RX);	/* read char, ack the device */
-  if (queuecount(&(tty->read_queue)) < MAXBUF) {   /* if space left in ring buffer */
-    //tty->rnum++;                 /* increase character count */
-    enqueue(&(tty->read_queue), ch); /* put char in ibuf, step ptr */
-    //if (tty->rin >= MAXBUF)     /* check if we need to wrap-around */
-    //  tty->rin = 0;              /* and reset as appropriate */
+  iir = inpt(baseport + UART_IIR);
+
+  switch (iir & UART_IIR_ID) {
+    case UART_IIR_RDI:
+      ch = inpt(baseport+UART_RX);	/* read char, ack the device */
+
+      if (queuecount(&(tty->read_queue)) < MAXBUF) {   /* if space left in ring buffer */
+        enqueue(&(tty->read_queue), ch); /* put char in ibuf, step ptr */
+      }
+
+      if (tty->echoflag) {       /* if echoing wanted */
+        enqueue(&(tty->echo_queue), ch);
+        outpt(baseport+UART_TX,ch);   /* echo char: see note above */
+      }
+
+    case UART_IIR_THRI:
+      if (queuecount(&(tty->echo_queue)) != 0) {
+        outpt(baseport+UART_TX, dequeue(&(tty->echo_queue)));
+      } else if (queuecount(&(tty->write_queue)) != 0) {
+          ch = dequeue(&(tty->write_queue));
+          outpt(baseport+UART_TX, ch);
+      } else {
+          outpt(baseport+UART_IER, UART_IER_RDI);
+      }
   }
-  if (tty->echoflag)             /* if echoing wanted */
-    outpt(baseport+UART_TX,ch);   /* echo char: see note above */
 }
 
 /* append msg to memory log */
