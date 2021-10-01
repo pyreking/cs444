@@ -25,6 +25,7 @@ struct tty {
   int tnum;                   /* number of characters in xmit buffer */
   Queue read_queue;
   Queue write_queue;
+  Queue echo_queue;
 };
 
 extern struct tty ttytab[];
