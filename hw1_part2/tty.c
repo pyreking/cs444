@@ -98,7 +98,7 @@ int ttyread(int dev, char *buf, int nchar)
 {
   int baseport;
   struct tty *tty;
-  int i, copychars;
+  int i = 0;
 
   char log[BUFLEN];
   int saved_eflags;        /* old cpu control/status reg, so can restore it */
@@ -106,19 +106,22 @@ int ttyread(int dev, char *buf, int nchar)
   baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
   tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
 
-  copychars = min(nchar, queuecount(&(tty->read_queue)));      /* chars to copy from buffer */
-  for (i = 0; i < copychars; i++) {
+  while (i < nchar) {
     saved_eflags = get_eflags();
     cli();			/* disable ints in CPU */
-    buf[i] = dequeue(&(tty->read_queue));      /* copy from ibuf to user buf */
-   sprintf(log, ">%c", buf[i]);
-   debug_log(log);
-   //tty->rnum--;                          /* decrement count */
-    //if (tty->rout >= MAXBUF) tty->rout = 0;
+
+    if (queuecount(&(tty->read_queue)) != 0) {
+      buf[i] = dequeue(&(tty->read_queue));      /* copy from ibuf to user buf */
+
+      sprintf(log, ">%c", buf[i]);
+      debug_log(log);
+      i++;
+    }
+
     set_eflags(saved_eflags);     /* back to previous CPU int. status */
   }
 
-  return copychars;       /* but should wait for rest of nchar chars if nec. */
+  return nchar;       /* but should wait for rest of nchar chars if nec. */
   /* this is something for you to correct */
 }
 
