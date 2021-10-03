@@ -152,6 +152,8 @@ int ttywrite(int dev, char *buf, int nchar)
 
   while (i < nchar && queuecount(&(tty->write_queue)) < MAXBUF) {
     enqueue(&(tty->write_queue), buf[i]);
+    sprintf(log,"<%c", buf[i]); /* record input char-- */
+    debug_log(log);
     i++;
   }
 
@@ -167,6 +169,7 @@ int ttywrite(int dev, char *buf, int nchar)
       sprintf(log,"<%c", buf[i]); /* record input char-- */
       debug_log(log);
       i++;
+      outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
     }
 
     set_eflags(saved_eflags); 
@@ -219,7 +222,7 @@ void irqinthandc(int dev){
 
   pic_end_int();                /* notify PIC that its part is done */
   debug_log("*");
-  iir = inpt(baseport + UART_IIR);
+  iir = inpt(baseport+UART_IIR);
 
   switch (iir & UART_IIR_ID) {
     case UART_IIR_RDI:
@@ -231,7 +234,7 @@ void irqinthandc(int dev){
 
       if (tty->echoflag) {       /* if echoing wanted */
         enqueue(&(tty->echo_queue), ch);
-        outpt(baseport+UART_TX,ch);   /* echo char: see note above */
+        outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);   /* echo char: see note above */
       }
 
     case UART_IIR_THRI:
