@@ -1,7 +1,9 @@
 /*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
 *
 *       file:           tty.c
 *       author:         betty o'neil
+*       
 *
 *       tty driver--device-specific routines for ttys 
 *

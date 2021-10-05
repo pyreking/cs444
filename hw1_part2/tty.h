@@ -1,7 +1,8 @@
 /*********************************************************************
-*
-*       file:           tty.h
-*       author:         betty o'neil
+*       Modified by Austin Guiney for CS444 class.
+*       File:           tty.c
+*       Date:           10/12/21
+*       Author:         betty o'neil
 *
 *       private header file for tty drivers
 *       apps should not include this header
