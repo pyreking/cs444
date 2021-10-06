@@ -16,17 +16,17 @@
 
 struct tty {
   int echoflag;			/* echo chars in read */
-  char rbuf[MAXBUF];            /* typeahead chars */
+  char rbuf[MAXBUF];          /* typeahead chars */
   int rin;                    /* index into receive buffer */
   int rout;                   /* index out of receive buffer */
   int rnum;                   /* number of characters in rcvr buffer */
-  char tbuf[MAXBUF];            /* output chars (for transmit) */
+  char tbuf[MAXBUF];          /* output chars (for transmit) */
   int tin;                    /* index into transmit buffer */
   int tout;                   /* index out of transmit buffer */
   int tnum;                   /* number of characters in xmit buffer */
-  Queue read_queue;
-  Queue write_queue;
-  Queue echo_queue;
+  Queue read_queue;           /* queue for read characters */
+  Queue write_queue;          /* queue for write characters */
+  Queue echo_queue;           /* queue for echo characters */
 };
 
 extern struct tty ttytab[];
