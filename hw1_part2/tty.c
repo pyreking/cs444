@@ -1,8 +1,8 @@
 /*********************************************************************
 *       Modified by Austin Guiney for CS444 class.
-*
-*       file:           tty.c
-*       author:         betty o'neil
+*       File:           tty.c
+*       Date:           10/12/21
+*       Author:         betty o'neil
 *       
 *
 *       tty driver--device-specific routines for ttys 
@@ -65,7 +65,7 @@ void ttyinit(int dev)
       kprintf("Bad TTY device table entry, dev %d\n", dev);
       return;			/* give up */
   }
-  tty->echoflag = 1;		/* default to echoing */
+  tty->echoflag = 1;          /* default to echoing */
   tty->rin = 0;               /* initialize indices */
   tty->rout = 0;
   tty->rnum = 0;              /* initialize counter */
@@ -73,6 +73,7 @@ void ttyinit(int dev)
   tty->tout = 0;
   tty->tnum = 0;              /* initialize counter */
 
+  /* Initialize queeues for read, write, and echo functions. */
   init_queue(&(tty->read_queue), MAXBUF);
   init_queue(&(tty->write_queue), MAXBUF);
   init_queue(&(tty->echo_queue), MAXBUF);
@@ -109,13 +110,17 @@ int ttyread(int dev, char *buf, int nchar)
   baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
   tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
 
+  /* Wait for the comport to read nchar characters before exiting */
   while (i < nchar) {
+    /* Save context before disabling interrupts */
     saved_eflags = get_eflags();
     cli();			/* disable ints in CPU */
 
+    /* Save the top character from the read queue to the user buffer. */
     if (queuecount(&(tty->read_queue)) != 0) {
       buf[i] = dequeue(&(tty->read_queue));      /* copy from ibuf to user buf */
 
+      /* Log characters for debug output */
       sprintf(log, ">%c", buf[i]);
       debug_log(log);
       i++;
@@ -148,10 +153,13 @@ int ttywrite(int dev, char *buf, int nchar)
 
   baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
   tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
-
+  
+  /* Save context before disabling interrupts */
   saved_eflags = get_eflags();
+  /* Disable interrupts while putting characters into the write queue */
   cli();
 
+  /* Fill up the write queue to its max size before writing the characters. */
   while (i < nchar && queuecount(&(tty->write_queue)) < MAXBUF) {
     enqueue(&(tty->write_queue), buf[i]);
     sprintf(log,"<%c", buf[i]); /* record input char-- */
@@ -159,21 +167,28 @@ int ttywrite(int dev, char *buf, int nchar)
     i++;
   }
 
+  /* Enable interrupts for the RDI and THRI registers */
   outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+  /* Enable interrupts again by restoring the eflags register */
   set_eflags(saved_eflags);
 
+  /* Wait for the comport to write nchar characters before exiting */
   while (i < nchar) {
+    /* Save context before disabling interrupts */
     saved_eflags = get_eflags();
     cli();			/* disable ints in CPU */
 
+    /* Put a character into the write queue if there is room for it */
     if (queuecount(&(tty->write_queue)) < MAXBUF) {
       enqueue(&(tty->write_queue), buf[i]);
       sprintf(log,"<%c", buf[i]); /* record input char-- */
       debug_log(log);
       i++;
+      /* Reset the interrupt signals */
       outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
     }
 
+    /* Enable interrupts again by restoring the eflags register */
     set_eflags(saved_eflags); 
   }
 
@@ -217,6 +232,7 @@ void irq3inthandc()
   irqinthandc(TTY1);
 }                              
 
+/* ISR for read and write functions */
 void irqinthandc(int dev){  
   int ch, iir;
   struct tty *tty = (struct tty *)(devtab[dev].dvdata);
@@ -224,28 +240,39 @@ void irqinthandc(int dev){
 
   pic_end_int();                /* notify PIC that its part is done */
   debug_log("*");
+
+  /* Get the status of the IIR register */
   iir = inpt(baseport+UART_IIR);
 
+  /* Mask out the IIR ID to determine which function is ready */
   switch (iir & UART_IIR_ID) {
+    /* Handle the ISR for the read function */
     case UART_IIR_RDI:
       ch = inpt(baseport+UART_RX);	/* read char, ack the device */
 
-      if (queuecount(&(tty->read_queue)) < MAXBUF) {   /* if space left in ring buffer */
-        enqueue(&(tty->read_queue), ch); /* put char in ibuf, step ptr */
+      /* Put a character in the read queue if there is room for it. */
+      if (queuecount(&(tty->read_queue)) < MAXBUF) {
+        enqueue(&(tty->read_queue), ch);
       }
 
-      if (tty->echoflag) {       /* if echoing wanted */
+      /* Put a character in the echo queue if the echo flag is enabled */
+      if (tty->echoflag) {
         enqueue(&(tty->echo_queue), ch);
-        outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);   /* echo char: see note above */
+        /* Reset the interrupt signals */
+        outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
       }
 
+    /* Handle the ISR for the write function */
     case UART_IIR_THRI:
+      /* Output an echo character if the echo queue isn't empty */
       if (queuecount(&(tty->echo_queue)) != 0) {
         outpt(baseport+UART_TX, dequeue(&(tty->echo_queue)));
+        /* Write the character that is ready to be written */
       } else if (queuecount(&(tty->write_queue)) != 0) {
           ch = dequeue(&(tty->write_queue));
           outpt(baseport+UART_TX, ch);
       } else {
+          /* Turn off the THRI interrupt signal after transmission is complete. */
           outpt(baseport+UART_IER, UART_IER_RDI);
       }
   }
