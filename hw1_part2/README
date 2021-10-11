@@ -1,3 +1,9 @@
+Submission: Austin Guiney
+Date: October 11th, 2021
+
+Files:
+testio_mod-aguiney.script: Typescript file for running testio.lnx.
+
 Files for CS444 device-independent i/o package for SAPC
 
 io_public.h--applications-level header: dev indep i/o API protos
