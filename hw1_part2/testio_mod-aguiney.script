@@ -1,0 +1,659 @@
+Script started on Mon 11 Oct 2021 05:17:28 PM EDT
+tuser@tutor-vserver:~$ ls
+eth.txt  [0m[01;34minclude[0m  [01;34mlib[0m  [01;34mtestaout[0m  test.c  [01;34mtestelf[0m  testelf.syms  typescript
+tuser@tutor-vserver:~$ ssh aguiney@users.cs.umb.edu
+aguiney@users.cs.umb.edu's password: 
+Welcome to Ubuntu 20.04.3 LTS (GNU/Linux 5.4.0-81-generic x86_64)
+
+  System information as of Mon 11 Oct 2021 05:17:39 PM EDT
+
+  System load:  0.01                Temperature:           46.0 C
+  Usage of /:   15.2% of 195.86GB   Processes:             502
+  Memory usage: 3%                  Users logged in:       21
+  Swap usage:   0%                  IPv4 address for eno1: 158.121.104.215
+
+Contact: operator@cs.umb.edu or 617-287-6480
+Last login: Mon Oct 11 17:15:46 2021 from 108.1.153.226
+aguiney@pe15:~$ cd cs444/hw1_part2
+aguiney@pe15:~/cs444/hw1_part2$ ls -al
+total 180
+drwxrwsr-x 3 aguiney cs444-1G  4096 Oct 11 17:16 .
+drwxrws--- 5 aguiney cs444-1G  4096 Sep 21 19:13 ..
+-rw-r--r-- 1 aguiney cs444-1G  1506 Sep 21 18:36 io.c
+-rw-r--r-- 1 aguiney cs444-1G   411 Sep 21 18:36 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G   815 Sep 21 18:36 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G  3224 Oct 11 17:16 ioconf.o
+-rw-r--r-- 1 aguiney cs444-1G  4556 Oct 11 17:16 io.o
+-rw-r--r-- 1 aguiney cs444-1G   566 Sep 21 18:36 io_public.h
+-rw-r--r-- 1 aguiney cs444-1G  2061 Sep 21 18:36 makefile
+drwxrwsr-x 2 aguiney cs444-1G  4096 Sep 21 18:36 queue
+-rw-r--r-- 1 aguiney cs444-1G  8368 Oct 11 17:16 queue.o
+-rw-r--r-- 1 aguiney cs444-1G   865 Oct 11 17:07 README
+-rw-r--r-- 1 aguiney cs444-1G  3782 Sep 21 18:36 remgdb-testio_mod.script
+-rw-r--r-- 1 aguiney cs444-1G  4999 Oct  1 18:00 serial.h
+lrwxrwxrwx 1 aguiney cs444-1G    11 Oct 11 17:16 syms -> testio.syms
+-rw-r--r-- 1 aguiney cs444-1G  3169 Sep 23 19:17 testio.c
+-rwxr-xr-x 1 aguiney cs444-1G 48544 Oct 11 17:16 testio.lnx
+-rw-r--r-- 1 aguiney cs444-1G  2325 Sep 21 18:36 testio_mod-orig.script
+-rw-r--r-- 1 aguiney cs444-1G  8808 Oct 11 17:16 testio.o
+-rw-r--r-- 1 aguiney cs444-1G  2078 Oct 11 17:16 testio.syms
+-rw-r--r-- 1 aguiney cs444-1G  8745 Oct 11 17:02 tty.c
+-rw-r--r-- 1 aguiney cs444-1G  1381 Oct  5 20:07 tty.h
+-rw-r--r-- 1 aguiney cs444-1G 12896 Oct 11 17:16 tty.o
+-rw-r--r-- 1 aguiney cs444-1G   415 Sep 21 18:36 tty_public.h
+aguiney@pe15:~/cs444/hw1_part2$ cat tty.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       File:           tty.c
+*       Date:           10/12/21
+*       Author:         betty o'neil
+*       
+*
+*       tty driver--device-specific routines for ttys 
+*
+*/
+#include <stdio.h>  /* for kprintf prototype */
+#include <serial.h>
+#include <cpu.h>
+#include <pic.h>
+#include "ioconf.h"
+#include "tty_public.h"
+#include "tty.h"
+#include "queue/queue.h"
+
+struct tty ttytab[NTTYS];        /* software params/data for each SLU dev */
+
+/* Record debug info in otherwise free memory between program and stack */
+/* 0x300000 = 3M, the start of the last M of user memory on the SAPC */
+#define DEBUG_AREA 0x300000
+#define BUFLEN 20
+
+char *debug_log_area = (char *)DEBUG_AREA;
+char *debug_record;  /* current pointer into log area */ 
+
+/* tell C about the assembler shell routines */
+extern void irq3inthand(void), irq4inthand(void);
+
+/* C part of interrupt handlers--specific names called by the assembler code */
+extern void irq3inthandc(void), irq4inthandc(void); 
+
+/* the common code for the two interrupt handlers */                           static void irqinthandc(int dev);
+
+/* prototype for debug_log */ 
+void debug_log(char *);
+
+/*====================================================================
+*
+*       tty specific initialization routine for COM devices
+*
+*/
+
+void ttyinit(int dev)
+{
+  int baseport;
+  struct tty *tty;		/* ptr to tty software params/data block */
+
+  debug_record = debug_log_area; /* clear debug log */
+  baseport = devtab[dev].dvbaseport; /* pick up hardware addr */
+  tty = (struct tty *)devtab[dev].dvdata; /* and software params struct */
+
+  if (baseport == COM1_BASE) {
+      /* arm interrupts by installing int vec */
+      set_intr_gate(COM1_IRQ+IRQ_TO_INT_N_SHIFT, &irq4inthand);
+      pic_enable_irq(COM1_IRQ);
+  } else if (baseport == COM2_BASE) {
+      /* arm interrupts by installing int vec */
+      set_intr_gate(COM2_IRQ+IRQ_TO_INT_N_SHIFT, &irq3inthand);
+      pic_enable_irq(COM2_IRQ);
+  } else {
+      kprintf("Bad TTY device table entry, dev %d\n", dev);
+      return;			/* give up */
+  }
+  tty->echoflag = 1;          /* default to echoing */
+  tty->rin = 0;               /* initialize indices */
+  tty->rout = 0;
+  tty->rnum = 0;              /* initialize counter */
+  tty->tin = 0;               /* initialize indices */
+  tty->tout = 0;
+  tty->tnum = 0;              /* initialize counter */
+
+  /* Initialize queeues for read, write, and echo functions. */
+  init_queue(&(tty->read_queue), MAXBUF);
+  init_queue(&(tty->write_queue), MAXBUF);
+  init_queue(&(tty->echo_queue), MAXBUF);
+
+  /* enable interrupts on receiver */
+  outpt(baseport+UART_IER, UART_IER_RDI); /* RDI = receiver data int */
+}
+
+
+/*====================================================================
+*
+*       Useful function when emptying/filling the read/write buffers
+*
+*/
+
+#define min(x,y) (x < y ? x : y)
+
+
+/*====================================================================
+*
+*       tty-specific read routine for TTY devices
+*
+*/
+
+int ttyread(int dev, char *buf, int nchar)
+{
+  int baseport;
+  struct tty *tty;
+  int i = 0;
+
+  char log[BUFLEN];
+  int saved_eflags;        /* old cpu control/status reg, so can restore it */
+
+  baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
+  tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
+
+  /* Wait for the comport to read nchar characters before exiting. */
+  while (i < nchar) {
+    /* Save context before disabling interrupts. */
+    saved_eflags = get_eflags();
+    cli();			/* disable ints in CPU */
+
+    /* Save the top character from the read queue to the user buffer. */
+    if (queuecount(&(tty->read_queue)) != 0) {
+      buf[i] = dequeue(&(tty->read_queue));      /* copy from ibuf to user buf */
+
+      /* Log characters for debug output. */
+      sprintf(log, ">%c", buf[i]);
+      debug_log(log);
+      i++;
+    }
+
+    set_eflags(saved_eflags);     /* back to previous CPU int. status */
+  }
+
+  return nchar;       /* but should wait for rest of nchar chars if nec. */
+  /* this is something for you to correct */
+}
+
+
+/*====================================================================
+*
+*       tty-specific write routine for SAPC devices
+*       (cs444: note that the buffer tbuf is superfluous in this code, but
+*        it still gives you a hint as to what needs to be done for
+*        the interrupt-driven case)
+*
+*/
+
+int ttywrite(int dev, char *buf, int nchar)
+{
+  int baseport;
+  struct tty *tty;
+  int i = 0;
+  char log[BUFLEN];
+  int saved_eflags;
+
+  baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
+  tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
+  
+  /* Save context before disabling interrupts. */
+  saved_eflags = get_eflags();
+  /* Disable interrupts while putting characters into the write queue. */
+  cli();
+
+  /* Fill up the write queue to its max capacity before writing the characters. */
+  while (i < nchar && queuecount(&(tty->write_queue)) < MAXBUF) {
+    enqueue(&(tty->write_queue), buf[i]);
+    /* Log characters for debug output. */
+    sprintf(log,"<%c", buf[i]); /* record input char-- */
+    debug_log(log);
+    i++;
+  }
+
+  /* Enable interrupts for the RDI and THRI registers. */
+  outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+  /* Enable interrupts again by restoring the eflags register. */
+  set_eflags(saved_eflags);
+
+  /* Wait for the comport to write nchar characters before exiting. */
+  while (i < nchar) {
+    /* Save context before disabling interrupts. */
+    saved_eflags = get_eflags();
+    cli();			/* disable ints in CPU */
+
+    /* Put a character into the write queue if there is room for it. */
+    if (queuecount(&(tty->write_queue)) < MAXBUF) {
+      enqueue(&(tty->write_queue), buf[i]);
+      sprintf(log,"<%c", buf[i]); /* record input char-- */
+      debug_log(log);
+      i++;
+      /* Reset the interrupt signals. */
+      outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+    }
+
+    /* Enable interrupts again by restoring the eflags register */
+    set_eflags(saved_eflags); 
+  }
+
+  return nchar;
+}
+
+/*====================================================================
+*
+*       tty-specific control routine for TTY devices
+*
+*/
+
+int ttycontrol(int dev, int fncode, int val)
+{
+  struct tty *this_tty = (struct tty *)(devtab[dev].dvdata);
+
+  if (fncode == ECHOCONTROL)
+    this_tty->echoflag = val;
+  else return -1;
+  return 0;
+}
+
+
+
+/*====================================================================
+*
+*       tty-specific interrupt routine for COM ports
+*
+*   Since interrupt handlers don't have parameters, we have two different
+*   handlers.  However, all the common code has been placed in a helper 
+*   function.
+*/
+  
+void irq4inthandc()
+{
+  irqinthandc(TTY0);
+}                              
+  
+void irq3inthandc()
+{
+  irqinthandc(TTY1);
+}                              
+
+/* ISR for read and write functions */
+void irqinthandc(int dev){  
+  int ch, iir;
+  struct tty *tty = (struct tty *)(devtab[dev].dvdata);
+  int baseport = devtab[dev].dvbaseport; /* hardware i/o port */;
+
+  pic_end_int();                /* notify PIC that its part is done */
+  debug_log("*");
+
+  /* Get the status of the IIR register. */
+  iir = inpt(baseport+UART_IIR);
+
+  /* Mask out the IIR ID to determine which function is ready. */
+  switch (iir & UART_IIR_ID) {
+    /* Handle the ISR for the read function. */
+    case UART_IIR_RDI:
+      ch = inpt(baseport+UART_RX);	/* read char, ack the device */
+
+      /* Put a character in the read queue if there is room for it. */
+      if (queuecount(&(tty->read_queue)) < MAXBUF) {
+        enqueue(&(tty->read_queue), ch);
+      }
+
+      /* Put a character in the echo queue if the echo flag is enabled */
+      if (tty->echoflag) {
+        enqueue(&(tty->echo_queue), ch);
+        /* Reset the interrupt signals */
+        outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+      }
+
+    /* Handle the ISR for the write function. */
+    case UART_IIR_THRI:
+      /* Output an echo character if the echo queue isn't empty. */
+      if (queuecount(&(tty->echo_queue)) != 0) {
+        outpt(baseport+UART_TX, dequeue(&(tty->echo_queue)));
+        /* Write the character that is ready to be written. */
+      } else if (queuecount(&(tty->write_queue)) != 0) {
+          ch = dequeue(&(tty->write_queue));
+          outpt(baseport+UART_TX, ch);
+      } else {
+          /* Turn off the THRI interrupt signal after the transmission is complete. */
+          outpt(baseport+UART_IER, UART_IER_RDI);
+      }
+  }
+}
+
+/* append msg to memory log */
+void debug_log(char *msg)
+{
+    strcpy(debug_record, msg);
+    debug_record +=strlen(msg);
+}
+aguiney@pe15:~/cs444/hw1_part2$ cat tty.h
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       File:           tty.c
+*       Date:           10/12/21
+*       Author:         betty o'neil
+*
+*       private header file for tty drivers
+*       apps should not include this header
+*/
+
+#ifndef TTY_H
+#define TTY_H
+#include "queue/queue.h"
+
+#define MAXBUF 6
+
+struct tty {
+  int echoflag;			/* echo chars in read */
+  char rbuf[MAXBUF];          /* typeahead chars */
+  int rin;                    /* index into receive buffer */
+  int rout;                   /* index out of receive buffer */
+  int rnum;                   /* number of characters in rcvr buffer */
+  char tbuf[MAXBUF];          /* output chars (for transmit) */
+  int tin;                    /* index into transmit buffer */
+  int tout;                   /* index out of transmit buffer */
+  int tnum;                   /* number of characters in xmit buffer */
+  Queue read_queue;           /* queue for read characters */
+  Queue write_queue;          /* queue for write characters */
+  Queue echo_queue;           /* queue for echo characters */
+};
+
+extern struct tty ttytab[];
+
+/* tty-specific device functions */
+void ttyinit(int dev);
+int ttyread(int dev, char *buf, int nchar);
+int ttywrite(int dev, char *buf, int nchar);
+int ttycontrol(int dev, int fncode, int val);
+
+#endif 
+aguiney@pe15:~/cs444/hw1_part2$ cat testio.c
+/*********************************************************************
+*
+*       file:           testio.c
+*       author:         betty o'neil
+*
+*       test program (application code) for 
+*       the device-independent i/o package for SAPC
+*
+*       Modified by Ron Cheung on 9/2016 to have a bigger
+*       DELAYLOOPCOUNT for faster VM
+*/
+
+#include <stdio.h>              /* for lib's device # defs, protos */
+#include "io_public.h"		/* for our packages devs, API prototypes */
+
+#define MILLION 1000000
+#define DELAYLOOPCOUNT (1000000000)
+#define BUFLEN 80
+
+//extern int kprintf(char * format, ...);
+void delay(void);
+/* Note that kprintf is supplied with the SAPC support library.  It does 
+  output polling to the console device with interrupts (temporarily) off.
+  We are using it as a debugging tool while working with a development
+  system, especially one using interrupts.  */
+
+int main(void)
+{
+  char buf[BUFLEN];
+  int got, i, lib_console_dev, ldev;
+
+  /* Determine the SAPC's "console" device, the serial port for user i/o */
+  lib_console_dev = sys_get_console_dev();  /* SAPC support lib fn */
+  switch(lib_console_dev) {
+  case COM1: ldev = TTY0;	/* convert to our dev #'s */
+    break;
+  case COM2: ldev = TTY1;
+    break;
+  default: printf("Unknown console device\n");
+    return 1;
+  }
+  kprintf("Running with device TTY%d\n",ldev);
+  /* Now have a usable device to talk to with i/o package-- */
+
+  ioinit();  /* Initialize devices */
+  kprintf("\nTrying simple write(4 chars)...\n");
+  got = write(ldev,"hi!\n",4);
+  kprintf("write of 4 returned %d\n",got);
+  delay();  /* time for output to finish, once write-behind is working */
+
+  kprintf("Trying longer write (9 chars)\n");
+  got = write(ldev, "abcdefghi", 9);
+  kprintf("write of 9 returned %d\n",got);
+  delay();  /* time for output to finish, once write-behind is working */
+
+  for (i = 0; i < BUFLEN; i++)
+      buf[i] = 'A'+ i/2;
+  kprintf("\nTrying write of %d-char string...\n", BUFLEN);
+  got = write(ldev, buf, BUFLEN);
+  kprintf("\nwrite returned %d\n", got);
+  delay();
+
+  kprintf("\nType 10 chars input to test typeahead while looping for delay...\n");
+  delay();
+  got = read(ldev, buf, 10);	/* should wait for all 10 chars, once fixed */
+  kprintf("\nGot %d chars into buf. Trying write of buf...\n", got);
+  write(ldev, buf, got);
+
+  kprintf("\nTrying another 10 chars read right away...\n");
+  got = read(ldev, buf, 10);	/* should wait for input, once fixed */
+  kprintf("\nGot %d chars on second read\n",got);
+  if (got == 0) 
+      kprintf("nothing in buffer\n");	/* expected result until fixed */
+  else 
+      write(ldev, buf, got);	/* should write 10 chars once fixed */
+
+  kprintf("\n\nNow turning echo off--\n");
+  control(ldev, ECHOCONTROL, 0);
+  kprintf("\nType 20 chars input, note lack of echoes...\n");
+  delay();
+  got = read(ldev, buf, 20);
+  kprintf("\nTrying write of buf...\n");
+  write(ldev, buf, got);
+  kprintf("\nAsked for 20 characters; got %d\n", got);
+  return 0;
+}
+
+/* the faster the machine you're on, the longer this loop must be */
+void delay()
+{
+  unsigned  long int i;
+
+  kprintf("<doing delay>\n");
+  for (i = 0; i < DELAYLOOPCOUNT; i++)
+   ;
+   }aguiney@pe15:~/cs444/hw1_part2$ make clean
+rm -f *.o
+aguiney@pe15:~/cs444/hw1_part2$ cat README
+Submission: Austin Guiney
+Date: October 11th, 2021
+
+Files:
+testio_mod-aguiney.script: Typescript file for running testio.lnx.
+
+Files for CS444 device-independent i/o package for SAPC
+
+io_public.h--applications-level header: dev indep i/o API protos
+tty_public.h--app-level header: tty-specific info
+
+ioconf.h--def of device struct, top-level info on device
+ioconf.c--actual device table, array of device structs, one for each device
+io.c--top-level device-independent calls: ioinit, read, write, control
+
+Device type tty (for COM lines):
+tty.h--internal header file
+tty.c--tty device driver, i.e., device-specific code
+
+makefile--  make testio.lnx   builds testio.c with io package
+
+testio.c--applications-level program exercising io package
+
+testio-orig.script-- run of testio.lnx as provided
+remgdb-testio.script-- remote gdb session with the provided testio.lnx
+aguiney@pe15:~/cs444/hw1_part2$ ls -al
+total 128
+drwxrwsr-x 3 aguiney cs444-1G  4096 Oct 11 17:18 .
+drwxrws--- 5 aguiney cs444-1G  4096 Sep 21 19:13 ..
+-rw-r--r-- 1 aguiney cs444-1G  1506 Sep 21 18:36 io.c
+-rw-r--r-- 1 aguiney cs444-1G   411 Sep 21 18:36 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G   815 Sep 21 18:36 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G   566 Sep 21 18:36 io_public.h
+-rw-r--r-- 1 aguiney cs444-1G  2061 Sep 21 18:36 makefile
+drwxrwsr-x 2 aguiney cs444-1G  4096 Sep 21 18:36 queue
+-rw-r--r-- 1 aguiney cs444-1G   865 Oct 11 17:07 README
+-rw-r--r-- 1 aguiney cs444-1G  3782 Sep 21 18:36 remgdb-testio_mod.script
+-rw-r--r-- 1 aguiney cs444-1G  4999 Oct  1 18:00 serial.h
+lrwxrwxrwx 1 aguiney cs444-1G    11 Oct 11 17:16 syms -> testio.syms
+-rw-r--r-- 1 aguiney cs444-1G  3169 Sep 23 19:17 testio.c
+-rwxr-xr-x 1 aguiney cs444-1G 48544 Oct 11 17:16 testio.lnx
+-rw-r--r-- 1 aguiney cs444-1G  2325 Sep 21 18:36 testio_mod-orig.script
+-rw-r--r-- 1 aguiney cs444-1G  2078 Oct 11 17:16 testio.syms
+-rw-r--r-- 1 aguiney cs444-1G  8745 Oct 11 17:02 tty.c
+-rw-r--r-- 1 aguiney cs444-1G  1381 Oct  5 20:07 tty.h
+-rw-r--r-- 1 aguiney cs444-1G   415 Sep 21 18:36 tty_public.h
+aguiney@pe15:~/cs444/hw1_part2$ make
+gcc -DSAPC -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o testio.o testio.c
+gcc -DSAPC -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o io.o io.c
+gcc -DSAPC -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o tty.o tty.c
+[01m[Ktty.c:[m[K In function ‘[01m[Kttyread[m[K’:
+[01m[Ktty.c:103:7:[m[K [01;35m[Kwarning: [m[Kvariable ‘[01m[Kbaseport[m[K’ set but not used [[01;35m[K-Wunused-but-set-variable[m[K]
+  103 |   int [01;35m[Kbaseport[m[K;
+      |       [01;35m[K^~~~~~~~[m[K
+gcc -DSAPC -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o ioconf.o ioconf.c
+gcc -DSAPC -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o queue.o queue/queue.c
+ld -m elf_i386 -N -Ttext 100100 -o testio.lnx \
+/home/cheungr/serl/tutor-linux/libc/startup0.o /home/cheungr/serl/tutor-linux/libc/startup.o \
+  testio.o io.o tty.o ioconf.o queue.o  /home/cheungr/serl/tutor-linux/libc/libc.a
+rm -f syms;nm -n testio.lnx>testio.syms;ln -s testio.syms syms
+aguiney@pe15:~/cs444/hw1_part2$ ls -al
+total 180
+drwxrwsr-x 3 aguiney cs444-1G  4096 Oct 11 17:18 .
+drwxrws--- 5 aguiney cs444-1G  4096 Sep 21 19:13 ..
+-rw-r--r-- 1 aguiney cs444-1G  1506 Sep 21 18:36 io.c
+-rw-r--r-- 1 aguiney cs444-1G   411 Sep 21 18:36 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G   815 Sep 21 18:36 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G  3224 Oct 11 17:18 ioconf.o
+-rw-r--r-- 1 aguiney cs444-1G  4556 Oct 11 17:18 io.o
+-rw-r--r-- 1 aguiney cs444-1G   566 Sep 21 18:36 io_public.h
+-rw-r--r-- 1 aguiney cs444-1G  2061 Sep 21 18:36 makefile
+drwxrwsr-x 2 aguiney cs444-1G  4096 Sep 21 18:36 queue
+-rw-r--r-- 1 aguiney cs444-1G  8368 Oct 11 17:18 queue.o
+-rw-r--r-- 1 aguiney cs444-1G   865 Oct 11 17:07 README
+-rw-r--r-- 1 aguiney cs444-1G  3782 Sep 21 18:36 remgdb-testio_mod.script
+-rw-r--r-- 1 aguiney cs444-1G  4999 Oct  1 18:00 serial.h
+lrwxrwxrwx 1 aguiney cs444-1G    11 Oct 11 17:18 syms -> testio.syms
+-rw-r--r-- 1 aguiney cs444-1G  3169 Sep 23 19:17 testio.c
+-rwxr-xr-x 1 aguiney cs444-1G 48544 Oct 11 17:18 testio.lnx
+-rw-r--r-- 1 aguiney cs444-1G  2325 Sep 21 18:36 testio_mod-orig.script
+-rw-r--r-- 1 aguiney cs444-1G  8808 Oct 11 17:18 testio.o
+-rw-r--r-- 1 aguiney cs444-1G  2078 Oct 11 17:18 testio.syms
+-rw-r--r-- 1 aguiney cs444-1G  8745 Oct 11 17:02 tty.c
+-rw-r--r-- 1 aguiney cs444-1G  1381 Oct  5 20:07 tty.h
+-rw-r--r-- 1 aguiney cs444-1G 12896 Oct 11 17:18 tty.o
+-rw-r--r-- 1 aguiney cs444-1G   415 Sep 21 18:36 tty_public.h
+aguiney@pe15:~/cs444/hw1_part2$ exit
+logout
+Connection to users.cs.umb.edu closed.
+tuser@tutor-vserver:~$ scp aguiney@users.cs.umb.edu:cs444/hw1_part2/testio.* .
+aguiney@users.cs.umb.edu's password: 
+testio.c                                        0%    0     0.0KB/s   --:-- ETAtestio.c                                      100% 3169     3.1KB/s   00:00    
+testio.lnx                                      0%    0     0.0KB/s   --:-- ETAtestio.lnx                                    100%   47KB  47.4KB/s   00:00    
+testio.o                                        0%    0     0.0KB/s   --:-- ETAtestio.o                                      100% 8808     8.6KB/s   00:00    
+testio.syms                                     0%    0     0.0KB/s   --:-- ETAtestio.syms                                   100% 2078     2.0KB/s   00:00    
+tuser@tutor-vserver:~$ ls
+eth.txt  [0m[01;34mlib[0m       test.c   testelf.syms  [01;32mtestio.lnx[0m  testio.syms
+[01;34minclude[0m  [01;34mtestaout[0m  [01;34mtestelf[0m  testio.c      testio.o    typescript
+tuser@tutor-vserver:~$ mtip -f testio.lnx
+For command help, type ~?
+For help on args, rerun without args
+Code starts at 0x100100
+Using board # 1 
+Please type <CR> to confirm console setting: 
+Setting console dev to COM2Console: colour EGA+ 80x25
+COM1 at 0x03f8 (irq = 4) is a 16550A
+COM2 at 0x02f8 (irq = 3) is a 16550A
+
+                 Welcome to UMB Tutor for the PC
+   UMB Tutor is a 32-bit protected-mode PC debugger/downloader,
+       based on Linux, UMB Tutor for m68k, and remote gdb.
+UMB Tutor is free software and you are welcome to distribute copies
+of it under certain conditions.  There is no warranty for this program.
+The copyright and warranty provisions follow the Gnu general public
+license, available for view in gdb and elsewhere.  Full sources available.
+--bugs, suggestions, questions to eoneil@cs.umb.edu
+
+Exception 3 at EIP=00057a9b: Breakpoint
+Tutor> ~downloading testio.lnx
+
+............Done.
+
+Download done, setting EIP to 100100.
+Tutor> go 100100
+Running with device TTY1
+
+Trying simple write(4 chars)...
+hi!
+write of 4 returned 4
+<doing delay>
+Trying longer write (9 chars)
+abcdefghiwrite of 9 returned 9
+<doing delay>
+
+Trying write of 80-char string...
+AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQRRSSTTUUVVWWXXYYZZ[[\\]]^^__``aabbccddeeffgghh
+write returned 80
+<doing delay>
+
+Type 10 chars input to test typeahead while looping for delay...
+<doing delay>
+abcdefghij
+Got 10 chars into buf. Trying write of buf...
+abcdefghij
+Trying another 10 chars read right away...
+abcdefghij
+Got 10 chars on second read
+abcdefghij
+
+Now turning echo off--
+
+Type 20 chars input, note lack of echoes...
+<doing delay>
+
+Trying write of buf...
+abcdefghijklmnopqrst
+Asked for 20 characters; got 20
+Exception 3 at EIP=00100110: Breakpoint
+Tutor> md 300000
+00300000    3c 68 3c 69 3c 21 3c 0a 2a 2a 2a 2a 2a 3c 61 3c <h<i<!<.*****<a<
+Tutor> 
+00300010    62 3c 63 3c 64 3c 65 3c 66 2a 2a 2a 2a 2a 2a 2a b<c<d<e<f*******
+Tutor> 
+00300020    3c 67 2a 2a 3c 68 2a 2a 3c 69 2a 2a 3c 41 3c 41 <g**<h**<i**<A<A
+Tutor> 
+00300030    3c 42 3c 42 3c 43 3c 43 2a 2a 2a 2a 2a 2a 2a 3c <B<B<C<C*******<
+Tutor> 
+00300040    44 2a 2a 3c 44 2a 2a 3c 45 2a 2a 3c 45 2a 2a 3c D**<D**<E**<E**<
+Tutor> 
+00300050    46 2a 2a 3c 46 2a 2a 3c 47 2a 2a 3c 47 2a 2a 3c F**<F**<G**<G**<
+Tutor> 
+00300060    48 2a 2a 3c 48 2a 2a 3c 49 2a 2a 3c 49 2a 2a 3c H**<H**<I**<I**<
+Tutor> 
+00300070    4a 2a 2a 3c 4a 2a 2a 3c 4b 2a 2a 3c 4b 2a 2a 3c J**<J**<K**<K**<
+Tutor> 
+00300080    4c 2a 2a 3c 4c 2a 2a 3c 4d 2a 2a 3c 4d 2a 2a 3c L**<L**<M**<M**<
+Tutor> 
+00300090    4e 2a 2a 3c 4e 2a 2a 3c 4f 2a 2a 3c 4f 2a 2a 3c N**<N**<O**<O**<
+Tutor> 
+003000a0    50 2a 2a 3c 50 2a 2a 3c 51 2a 2a 3c 51 2a 2a 3c P**<P**<Q**<Q**<
+Tutor> 
+Tutor> 
+Quit handler: 
+killing process 1975 Leaving board #1
+tuser@tutor-vserver:~$ exit
+exit
+
+Script done on Mon 11 Oct 2021 05:22:03 PM EDT
