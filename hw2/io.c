@@ -34,7 +34,7 @@ void ioinit()
 *       (hw2: rename to "sysread" for the kernel)
 */
 
-int read(int dev, char *buf, int nchar)
+int sysread(int dev, char *buf, int nchar)
 {
   if (dev < 0 || dev >= NDEVS) return -1;      /* fail */
   return devtab[dev].dvread(dev, buf, nchar); /* call dev-specific routine */
@@ -45,7 +45,7 @@ int read(int dev, char *buf, int nchar)
 *       write function calling routine for SAPC devices
 *       (rename to "syswrite" for the kernel)
 */
-int write(int dev, char *buf, int nchar)
+int syswrite(int dev, char *buf, int nchar)
 {
   if (dev < 0 || dev >= NDEVS) return -1;       /* fail */
   return devtab[dev].dvwrite(dev, buf, nchar); /* call dev-specific routine */
