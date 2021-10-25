@@ -9,7 +9,7 @@
 /* hw2: delete include of io_public.h here, */
 /*  put kernel-fn proto's, ioinit, sysread, etc., in tsystm.h */
 #include <cpu.h>
-#include "io_public.h"
+#include "tsystm.h"
 #include "ioconf.h"
 
 /*====================================================================
@@ -56,7 +56,7 @@ int syswrite(int dev, char *buf, int nchar)
 *       control function calling routine for SAPC devices
 *       (you can drop this one for hw2)
 */
-int control(int dev, int fncode, int val)  /* note: val could be pointer */
+int syscontrol(int dev, int fncode, int val)  /* note: val could be pointer */
 {
   if (dev < 0 || dev >= NDEVS) return -1;          /* fail */
   return devtab[dev].dvcontrol(dev, fncode, val); /* dev-specific routine */
