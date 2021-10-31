@@ -22,22 +22,14 @@ ii) Kernel files:
    ioconf.h, tty.h: i/o headers used only by kernel
    tsystm.h: syscall dispatch, kernel function prototypes (a copy is posted)
    startup0.s: this file is provided.  Sets up stack, calls into startup1.c
-   startup.c: this file is provided, but you need to modify it to call your kernel initialization routine
-                   instead of main.
-   tunix.c:  has kernel init routine. It needs to call ioinit, call set_trap_gate(0x80,&syscall), and  
-                 possibly other inits. tunix.c also has the code for syscallc and sys call exit. The
-                 code for set_trap_gate has been provide in libc/cpu.c and built into the libc library
-
-
-   syscallc: first write it with a big switch statement over the various different syscalls.  If you have time,
-                  upgrade it to use a sysent dispatch table.
+   startup.c: calls kernel initialization routine
+   tunix.c:   has kernel init routine and trap call handler routine.
 
    sysentry.s:  Trap handler's assembler envelope routine syscall for the trap resulting from a
                   system call--needs to push eax, ebx, ecx, edx on stack, where they can be accessed from C,
-                  call syscallc, then pops, iret. Use $pclibsrc/irq4.s as an example and modify it to fit your
-                  needs.
+                  call syscallc, then pops, iret.
 
-   io.c: rename "read" to "sysread", etc. to avoid linking problems, since "read" is a now user-level call.
+   io.c: defines sysread, syswrite, syscontrol, and sysexit.
 
    ioconf.c, ioconf.h:  from hw1. 
 
@@ -46,16 +38,12 @@ ii) Kernel files:
 iii) User-level files:
 
    tunistd.h: prototypes for user mode system calls (like UNIX /usr/include/unistd.h)
-   test1.c:  has main().  Easily extended to multiple user files, or user assembler sources, as long as they
-            follow the syscall rules and have a main entry point.  First example is
-	                        main() { write(TTY1,"hi!\n",4);}.  
-             Work back to testio.c from hw1.
-   ulib.s:  library set-ups for syscalls: read, write, exit. Provided for write, you add read and exit.
+   test1.c:  has main()
+   ulib.s:  library set-ups for syscalls: read, write, exit.
    crt0.s:  user-level "C startup module" sets up stack, calls main, does exit syscall.  Entry point ustart. 
               
 
 iv) hw1 solution files not directly used in hw2:  
    io_public.h:  like tunistd.h above, but also lists ioinit(), and not exit().
-   testio.c:  remove ioinit() call here to turn into proper user program.(and note that the kprintf's are
-      only for debugging)
+   testio.c:     tty i/o driver.
 
