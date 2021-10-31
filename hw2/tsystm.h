@@ -1,10 +1,9 @@
 /*********************************************************************
-*
+*       Modified by Austin Guiney for CS444 class.
 *       file:           tsystm.h
 *       author:         betty o'neil
 *
 *       kernel header for internal prototypes
-*
 */
 
 #ifndef TSYSTM_H

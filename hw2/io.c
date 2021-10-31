@@ -1,11 +1,12 @@
 /*********************************************************************
-*
+*       Modified by Austin Guiney for CS444 class.
 *       file:           io.c
 *       author:         betty o'neil
 *
 *       device-independent i/o package for SAPC
 *
 */
+
 /* hw2: delete include of io_public.h here, */
 /*  put kernel-fn proto's, ioinit, sysread, etc., in tsystm.h */
 #include <stdio.h>
@@ -13,7 +14,7 @@
 #include "tsystm.h"
 #include "ioconf.h"
 
-// Assembly function for exiting to tutor.
+/* Assembly function for exiting to tutor. */
 extern void shutdown(void);
 
 /*====================================================================

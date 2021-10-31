@@ -1,5 +1,5 @@
 /*********************************************************************
-*
+*       Modified by Austin Guiney for CS444 class.
 *       file:           ioconf.c
 *       author:         betty o'neil
 *

@@ -11,6 +11,7 @@ Typescript file:
 austin_guiney_hw_typescript.script.
 
 Program files:
+
 i) Shared between user and kernel:
 
    tty_public.h: device numbers

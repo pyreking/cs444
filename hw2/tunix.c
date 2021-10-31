@@ -1,3 +1,11 @@
+/*********************************************************************
+*       file:           tunix.c
+*       author:         Austin Guiney
+*
+*       trap handler for read, write, and exit systemcalls
+*
+*/
+
 #include <stdio.h>
 #include <cpu.h>
 #include <gates.h>

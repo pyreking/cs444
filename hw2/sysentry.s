@@ -1,3 +1,6 @@
+# file: sysentry.s
+# Description: Enters into the trap handler in tunix.c.
+# Modified by Austin Guiney for CS444 class.
 .globl syscallc, syscall
 
 syscall:

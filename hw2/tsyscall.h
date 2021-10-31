@@ -1,3 +1,10 @@
+/*********************************************************************
+*       file:           tsyscall.h
+*       author:         Austin Guiney
+*
+*       header file for trap code numbers
+*/
+
 #ifndef TSYSCALL_H
 #define TSYSCALL_H
 

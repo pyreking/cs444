@@ -1,4 +1,9 @@
-/* C startup file, called from startup0.s-- */
+/*********************************************************************
+*       file:           startup.c
+*       author:         Austin Guiney
+*
+*       C startup file, called from startup0.s
+*/
 
 extern void clr_bss(void);
 extern void init_devio(void);

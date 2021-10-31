@@ -1,3 +1,12 @@
+/*********************************************************************
+*       file:           tunistd.h
+*       author:         Austin Guiney
+*
+*       header file for write, read, and exit system calls
+*
+*/
+
+
 #ifndef TUNISTD_H
 #define TUNISTD_H
 

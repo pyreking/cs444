@@ -1,5 +1,8 @@
+# file: startup0.s
+# Description:
 # asm startup file
 # very first module in load
+# Modified by Austin Guiney for CS444 class.
 
 .globl _start, _startupc, shutdown
 

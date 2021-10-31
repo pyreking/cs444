@@ -1,3 +1,13 @@
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           test1.c
+*       author:         betty o'neil
+*
+*       test program (application code) for 
+*       the device-independent i/o package for SAPC
+*
+*/
+
 #include <stdio.h>
 #include "tty_public.h"
 #include "tsystm.h"
