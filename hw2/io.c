@@ -8,9 +8,13 @@
 */
 /* hw2: delete include of io_public.h here, */
 /*  put kernel-fn proto's, ioinit, sysread, etc., in tsystm.h */
+#include <stdio.h>
 #include <cpu.h>
 #include "tsystm.h"
 #include "ioconf.h"
+
+// Assembly function for exiting to tutor.
+extern void shutdown(void);
 
 /*====================================================================
 *
@@ -62,3 +66,16 @@ int syscontrol(int dev, int fncode, int val)  /* note: val could be pointer */
   return devtab[dev].dvcontrol(dev, fncode, val); /* dev-specific routine */
 }
 
+/*====================================================================
+*
+*       exit function calling routine for SAPC devices
+*/
+
+int sysexit(int exitcode)
+{
+  kprintf("Shutting system down...\n");
+  kprintf("Exit code is: %d.\n", exitcode);
+  shutdown();
+
+  return exitcode;
+}

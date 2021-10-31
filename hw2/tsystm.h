@@ -18,7 +18,8 @@ int sysread(int dev, char *buf, int nchar);
 int syswrite(int dev, char *buf, int nchar);
 /* misc. device functions */
 int syscontrol(int dev, int fncode, int val);
-
+/* exit to tutor from dev */
+int sysexit(int exitcode);
 /* debugging support */
 void debug_log(char *msg);
 
