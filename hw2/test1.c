@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "tty_public.h"
 #include "tsystm.h"
+#include "tunistd.h"
 
 #define MILLION 1000000
 #define DELAYLOOPCOUNT (400 * MILLION)
@@ -37,43 +38,43 @@ int main(void)
   /* Now have a usable device to talk to with i/o package-- */
   syscontrol(ldev, ECHOCONTROL, 1);
   kprintf("\nTrying simple write(4 chars)...\n");
-  got = syswrite(ldev,"hi!\n",4);
+  got = write(ldev,"hi!\n",4);
   kprintf("write of 4 returned %d\n",got);
   delay();  /* time for output to finish, once write-behind is working */
 
   kprintf("Trying longer write (9 chars)\n");
-  got = syswrite(ldev, "abcdefghi", 9);
+  got = write(ldev, "abcdefghi", 9);
   kprintf("write of 9 returned %d\n",got);
   delay();  /* time for output to finish, once write-behind is working */
 
   for (i = 0; i < BUFLEN; i++)
     buf[i] = 'A'+ i/2;
   kprintf("\nTrying write of %d-char string...\n", BUFLEN);
-  got = syswrite(ldev, buf, BUFLEN);
+  got = write(ldev, buf, BUFLEN);
   kprintf("\nwrite returned %d\n", got);
   delay();
 
   kprintf("\nType 10 chars input to test typeahead while looping for delay...\n");
   delay();
-  got = sysread(ldev, buf, 10);	/* should wait for all 10 chars, once fixed */
+  got = read(ldev, buf, 10);	/* should wait for all 10 chars, once fixed */
   kprintf("\nGot %d chars into buf. Trying write of buf...\n", got);
-  syswrite(ldev, buf, got);
+  write(ldev, buf, got);
 
   kprintf("\nTrying another 10 chars read right away...\n");
-  got = sysread(ldev, buf, 10);	/* should wait for input, once fixed */
+  got = read(ldev, buf, 10);	/* should wait for input, once fixed */
   kprintf("\nGot %d chars on second read\n",got);
   if (got == 0)
     kprintf("nothing in buffer\n");	/* expected result until fixed */
   else 
-    syswrite(ldev, buf, got);	/* should write 10 chars once fixed */
+    write(ldev, buf, got);	/* should write 10 chars once fixed */
 
   kprintf("\n\nNow turning echo off--\n");
   syscontrol(ldev, ECHOCONTROL, 0);
   kprintf("\nType 20 chars input, note lack of echoes...\n");
   delay();
-  got = sysread(ldev, buf, 20);
+  got = read(ldev, buf, 20);
   kprintf("\nTrying write of buf...\n");
-  syswrite(ldev, buf, got);
+  write(ldev, buf, got);
   kprintf("\nAsked for 20 characters; got %d\n", got);
 
   return 0;
