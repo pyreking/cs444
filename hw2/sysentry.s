@@ -9,7 +9,7 @@ syscall:
     pushl %ebx
     pushl %eax
     call syscallc # call c trap routine in tunix.c
-    popl %eax     # pop the values of eax to edx from stack
+    addl $4, %esp # use the new value of %eax after the system call
     popl %ebx
     popl %ecx
     popl %edx

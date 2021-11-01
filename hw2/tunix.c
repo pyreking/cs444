@@ -1,8 +1,9 @@
 /*********************************************************************
 *       file:           tunix.c
 *       author:         Austin Guiney
-*
-*       trap handler for read, write, and exit systemcalls
+*       
+*       kernel initializer and
+*       trap handler for read, write, and exit system calls
 *
 */
 
@@ -36,18 +37,17 @@ void syscallc(int user_eax, int devcode, char *buf, int bufflen)
 
   /* Perform the proper trap service routine based on the trap code. */
   switch (trap_code) {
-
     /* Perform a sysexit. */
     case EXIT_TRAP_NUMBER:
       sysexit(devcode);
       break;
-    /* Perform a sysread. */
+    /* Perform a sysread and save the return value in %eax. */
     case READ_TRAP_NUMBER:
-      sysread(devcode, buf, bufflen);
+      user_eax = sysread(devcode, buf, bufflen);
       break;
-    /* Perform a syswrite. */
+    /* Perform a syswrite and save the return value in %eax. */
     case WRITE_TRAP_NUMBER:
-      syswrite(devcode, buf, bufflen);
+      user_eax = syswrite(devcode, buf, bufflen);
       break;
     /* Print an error message if there is no valid trap code. */
     default:
