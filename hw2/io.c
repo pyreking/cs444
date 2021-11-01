@@ -74,7 +74,7 @@ int syscontrol(int dev, int fncode, int val)  /* note: val could be pointer */
 
 int sysexit(int exitcode)
 {
-  kprintf("Shutting system down...\n");
+  kprintf("\nShutting system down...\n");
   kprintf("Exit code is: %d.\n", exitcode);
   shutdown();
 
