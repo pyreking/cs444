@@ -1,5 +1,5 @@
 Author: Austin Guiney
-Date: October 31st, 2021
+Date: November 3rd, 2021
 
 Instructions:
 run `make clean` to removed the executable files from the directior.
@@ -8,14 +8,14 @@ run `mtip -f test1.lnx` and `~d` on tutor-vserver VM to download the program ont
 run `go 100100` on tutor to run the program.
 
 Typescript file:
-austin_guiney_hw_typescript.script.
+austin_guiney_hw2_typescript.script.
 
 Program files:
 
 i) Shared between user and kernel:
 
    tty_public.h: device numbers
-   tsyscall.h: syscall numbers (see a sample system call numbers in Linux/i386 system calls)
+   tsyscall.h: syscall numbers
 
 ii) Kernel files:
 
