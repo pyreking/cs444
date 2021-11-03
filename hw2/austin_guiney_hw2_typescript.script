@@ -1,0 +1,845 @@
+Script started on Wed 03 Nov 2021 02:22:26 PM EDT
+tuser@tutor-vserver:~$ ls
+eth.txt  [0m[01;34minclude[0m  [01;34mlib[0m  [01;34mtestaout[0m  [01;34mtestelf[0m  testelf.syms  typescript
+tuser@tutor-vserver:~$ ssh aguiney@users.cs.umb.edu
+aguiney@users.cs.umb.edu's password: 
+Welcome to Ubuntu 20.04.3 LTS (GNU/Linux 5.4.0-81-generic x86_64)
+
+  System information as of Wed 03 Nov 2021 02:22:39 PM EDT
+
+  System load:  0.14                Temperature:           46.0 C
+  Usage of /:   15.4% of 195.86GB   Processes:             462
+  Memory usage: 3%                  Users logged in:       13
+  Swap usage:   0%                  IPv4 address for eno1: 158.121.104.215
+
+Contact: operator@cs.umb.edu or 617-287-6480
+Last login: Wed Nov  3 14:16:08 2021 from 172.21.202.154
+aguiney@pe15:~$ cd cs444/hw2
+aguiney@pe15:~/cs444/hw2$ ls -al
+total 140
+drwxrwsr-x 3 aguiney cs444-1G  4096 Nov  3 14:21 .
+drwxrws--- 6 aguiney cs444-1G  4096 Oct 22 14:36 ..
+-rw-r--r-- 1 aguiney cs444-1G   465 Oct 31 15:56 crt0.s
+-rw-r--r-- 1 aguiney cs444-1G 40960 Oct 22 14:36 hw2.doc
+-rw-r--r-- 1 aguiney cs444-1G  2181 Nov  1 18:41 io.c
+-rw-r--r-- 1 aguiney cs444-1G   409 Nov  3 14:05 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G   815 Oct 22 14:36 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G   697 Oct 22 14:36 io_public.h
+-rw-r--r-- 1 aguiney cs444-1G  2766 Oct 22 14:36 makefile
+drwxrwsr-x 2 aguiney cs444-1G  4096 Oct 22 14:36 queue
+-rw-r--r-- 1 aguiney cs444-1G  1734 Nov  3 14:08 README
+-rw-r--r-- 1 aguiney cs444-1G   429 Oct 31 15:55 startup0.s
+-rw-r--r-- 1 aguiney cs444-1G   493 Oct 31 15:47 startup.c
+lrwxrwxrwx 1 aguiney cs444-1G    10 Nov  3 14:21 syms -> test1.syms
+-rw-r--r-- 1 aguiney cs444-1G   457 Nov  1 19:27 sysentry.s
+-rw-r--r-- 1 aguiney cs444-1G  2674 Nov  1 19:27 test1.c
+-rw-r--r-- 1 aguiney cs444-1G  2255 Nov  3 14:21 test1.syms
+-rw-r--r-- 1 aguiney cs444-1G  3059 Oct 31 15:50 testio.c
+-rw-r--r-- 1 aguiney cs444-1G   371 Oct 31 15:47 tsyscall.h
+-rw-r--r-- 1 aguiney cs444-1G   685 Oct 31 15:47 tsystm.h
+-rw-r--r-- 1 aguiney cs444-1G  7268 Oct 22 14:36 tty.c
+-rw-r--r-- 1 aguiney cs444-1G   744 Oct 22 14:36 tty.h
+-rw-r--r-- 1 aguiney cs444-1G   415 Oct 22 14:36 tty_public.h
+-rw-r--r-- 1 aguiney cs444-1G   362 Nov  1 18:10 tunistd.h
+-rw-r--r-- 1 aguiney cs444-1G  1594 Nov  1 19:26 tunix.c
+-rw-r--r-- 1 aguiney cs444-1G  1695 Nov  1 19:30 ulib.s
+aguiney@pe15:~/cs444/hw2$ cat README
+Author: Austin Guiney
+Date: November 3rd, 2021
+
+Instructions:
+run `make clean` to removed the executable files from the directior.
+run `make U=test1` to build the executable file.
+run `mtip -f test1.lnx` and `~d` on tutor-vserver VM to download the program onto tutor.
+run `go 100100` on tutor to run the program.
+
+Typescript file:
+austin_guiney_hw2_typescript.script.
+
+Program files:
+
+i) Shared between user and kernel:
+
+   tty_public.h: device numbers
+   tsyscall.h: syscall numbers
+
+ii) Kernel files:
+
+   ioconf.h, tty.h: i/o headers used only by kernel
+   tsystm.h: syscall dispatch, kernel function prototypes (a copy is posted)
+   startup0.s: this file is provided.  Sets up stack, calls into startup1.c
+   startup.c: calls kernel initialization routine
+   tunix.c:   has kernel init routine and trap call handler routine.
+
+   sysentry.s:  Trap handler's assembler envelope routine syscall for the trap resulting from a
+                  system call--needs to push eax, ebx, ecx, edx on stack, where they can be accessed from C,
+                  call syscallc, then pops, iret.
+
+   io.c: defines sysread, syswrite, syscontrol, and sysexit.
+
+   ioconf.c, ioconf.h:  from hw1. 
+
+   tty.c, tty.h, tty_public.h:  tty driver from hw1, unchanged
+
+iii) User-level files:
+
+   tunistd.h: prototypes for user mode system calls (like UNIX /usr/include/unistd.h)
+   test1.c:  has main()
+   ulib.s:  library set-ups for syscalls: read, write, exit.
+   crt0.s:  user-level "C startup module" sets up stack, calls main, does exit syscall.  Entry point ustart. 
+              
+
+iv) hw1 solution files not directly used in hw2:  
+   io_public.h:  like tunistd.h above, but also lists ioinit(), and not exit().
+   testio.c:     tty i/o driver.
+
+aguiney@pe15:~/cs444/hw2$ cat crt0.s
+# file: crt0.s
+# Description: Enters into the main function in test1.c
+# and then exits into tutor.
+# Author: Austin Guiney
+
+.global ustart
+.text
+
+ustart:
+    movl $0x3ffff0, %esp    # Set user program stack
+    movl $0, %ebp           # Make debugger backtrace terminate here
+    call main               # Call into main function in test1.c.
+    pushl %eax              # Push the exit code to the stack.
+    call exit               # Call into the exit function.
+aguiney@pe15:~/cs444/hw2$ cat io.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           io.c
+*       author:         betty o'neil
+*
+*       device-independent i/o package for SAPC
+*
+*/
+
+/* hw2: delete include of io_public.h here, */
+/*  put kernel-fn proto's, ioinit, sysread, etc., in tsystm.h */
+#include <stdio.h>
+#include <cpu.h>
+#include "tsystm.h"
+#include "ioconf.h"
+
+/* Assembly function for exiting to tutor. */
+extern void shutdown(void);
+
+/*====================================================================
+*
+* i/o initialization loop for SAPC devices
+*
+*/
+
+void ioinit()
+{
+  int i;
+
+  cli();
+  for (i = 0; i < NDEVS; i++)
+    devtab[i].dvinit(i);	/* call device-specific init routine */
+  sti();
+}
+
+/*====================================================================
+*
+*       read function calling routine for SAPC devices
+*       (hw2: rename to "sysread" for the kernel)
+*/
+
+int sysread(int dev, char *buf, int nchar)
+{
+  if (dev < 0 || dev >= NDEVS) return -1;      /* fail */
+  return devtab[dev].dvread(dev, buf, nchar); /* call dev-specific routine */
+}
+
+/*====================================================================
+*
+*       write function calling routine for SAPC devices
+*       (rename to "syswrite" for the kernel)
+*/
+int syswrite(int dev, char *buf, int nchar)
+{
+  if (dev < 0 || dev >= NDEVS) return -1;       /* fail */
+  return devtab[dev].dvwrite(dev, buf, nchar); /* call dev-specific routine */
+}
+
+/*====================================================================
+*
+*       control function calling routine for SAPC devices
+*       (you can drop this one for hw2)
+*/
+int syscontrol(int dev, int fncode, int val)  /* note: val could be pointer */
+{
+  if (dev < 0 || dev >= NDEVS) return -1;          /* fail */
+  return devtab[dev].dvcontrol(dev, fncode, val); /* dev-specific routine */
+}
+
+/*====================================================================
+*
+*       exit function calling routine for SAPC devices
+*/
+
+int sysexit(int exitcode)
+{
+  kprintf("\nShutting system down...\n");
+  kprintf("Exit code is: %d.\n", exitcode);
+  shutdown();
+
+  return exitcode;
+}aguiney@pe15:~/cs444/hw2$ cat startup0.s
+# file: startup0.s
+# Description:
+# asm startup file
+# very first module in load
+# Modified by Austin Guiney for CS444 class.
+
+.globl _start, _startupc, shutdown
+
+_start:     movl $0x3ffff0, %esp   # set user program stack
+            movl $0, %ebp          # make debugger backtrace terminate here
+            call _startupc         # call C startup, which calls user main
+shutdown:   int $3                 # return to Tutor
+
+
+aguiney@pe15:~/cs444/hw2$ cat startup.c
+/*********************************************************************
+*       file:           startup.c
+*       author:         Austin Guiney
+*
+*       C startup file, called from startup0.s
+*/
+
+extern void clr_bss(void);
+extern void init_devio(void);
+extern void init_kernel(void);
+
+void _startupc()
+{
+  clr_bss();			        /* clear BSS area (uninitialized data) */
+  init_devio();			      /* latch onto Tutor-supplied info, code */
+  init_kernel();			    /* execute user-supplied main */
+}aguiney@pe15:~/cs444/hw2$ cat sysentry.s
+# file: sysentry.s
+# Description: Enters into the trap handler in tunix.c.
+# Modified by Austin Guiney for CS444 class.
+.globl syscallc, syscall
+
+syscall:
+    pushl %edx    # push the values of eax to edx to stack
+    pushl %ecx
+    pushl %ebx
+    pushl %eax
+    call syscallc # call c trap routine in tunix.c
+    addl $4, %esp # use the new value of %eax after the system call
+    popl %ebx
+    popl %ecx
+    popl %edx
+    iret          # return to caller
+aguiney@pe15:~/cs444/hw2$ cat test1.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           test1.c
+*       author:         betty o'neil
+*
+*       test program (application code) for 
+*       the device-independent i/o package for SAPC
+*
+*/
+
+#include <stdio.h>
+#include "tty_public.h"
+#include "tsystm.h"
+#include "tunistd.h"
+
+#define MILLION 1000000
+#define DELAYLOOPCOUNT (400 * MILLION)
+#define BUFLEN 80
+
+void delay(void);
+
+int main(void)
+{
+  char buf[BUFLEN];
+  int got, i, lib_console_dev, ldev;
+
+  /* Determine the SAPC's "console" device, the serial port for user i/o */
+  lib_console_dev = sys_get_console_dev();  /* SAPC support lib fn */
+  switch(lib_console_dev) {
+  case COM1: ldev = TTY0;	/* convert to our dev #'s */
+    break;
+  case COM2: ldev = TTY1;
+    break;
+  default: printf("Unknown console device\n");
+    return 1;
+  }
+  kprintf("Running with device TTY%d\n",ldev);
+  /* Now have a usable device to talk to with i/o package-- */
+  syscontrol(ldev, ECHOCONTROL, 1);
+  kprintf("\nTrying simple write(4 chars)...\n");
+  got = write(ldev,"hi!\n",4);
+  kprintf("write of 4 returned %d\n",got);
+  delay();  /* time for output to finish, once write-behind is working */
+
+  kprintf("Trying longer write (9 chars)\n");
+  got = write(ldev, "abcdefghi", 9);
+  kprintf("write of 9 returned %d\n",got);
+  delay();  /* time for output to finish, once write-behind is working */
+
+  for (i = 0; i < BUFLEN; i++)
+    buf[i] = 'A'+ i/2;
+  kprintf("\nTrying write of %d-char string...\n", BUFLEN);
+  got = write(ldev, buf, BUFLEN);
+  kprintf("\nwrite returned %d\n", got);
+  delay();
+
+  kprintf("\nType 10 chars input to test typeahead while looping for delay...\n");
+  delay();
+  got = read(ldev, buf, 10);	/* should wait for all 10 chars, once fixed */
+  kprintf("\nGot %d chars into buf. Trying write of buf...\n", got);
+  write(ldev, buf, got);
+
+  kprintf("\nTrying another 10 chars read right away...\n");
+  got = read(ldev, buf, 10);	/* should wait for input, once fixed */
+  kprintf("\nGot %d chars on second read\n",got);
+  if (got == 0)
+    kprintf("nothing in buffer\n");	/* expected result until fixed */
+  else 
+    write(ldev, buf, got);	/* should write 10 chars once fixed */
+
+  kprintf("\n\nNow turning echo off--\n");
+  syscontrol(ldev, ECHOCONTROL, 0);
+  kprintf("\nType 20 chars input, note lack of echoes...\n");
+  delay();
+  got = read(ldev, buf, 20);
+  kprintf("\nTrying write of buf...\n");
+  write(ldev, buf, got);
+  kprintf("\nAsked for 20 characters; got %d\n", got);
+
+  return 0;
+}
+
+void delay(void)
+{
+  int i;
+
+  kprintf("<doing delay>\n");
+  for (i = 0; i < DELAYLOOPCOUNT; i++)
+   ;
+}aguiney@pe15:~/cs444/hw2$ cat testio.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           testio.c
+*       author:         betty o'neil
+*
+*       test program (application code) for 
+*       the device-independent i/o package for SAPC
+*
+*/
+
+#include <stdio.h>              /* for lib's device # defs, protos */
+#include "io_public.h"		/* for our packages devs, API prototypes */
+
+#define MILLION 1000000
+#define DELAYLOOPCOUNT (400 * MILLION)
+#define BUFLEN 80
+
+void delay(void);
+/* Note that kprintf is supplied with the SAPC support library.  It does 
+  output polling to the console device with interrupts (temporarily) off.
+  We are using it as a debugging tool while working with a development
+  system, especially one using interrupts.  */
+
+int main(void)
+{
+  char buf[BUFLEN];
+  int got, i, lib_console_dev, ldev;
+
+  /* Determine the SAPC's "console" device, the serial port for user i/o */
+  lib_console_dev = sys_get_console_dev();  /* SAPC support lib fn */
+  switch(lib_console_dev) {
+  case COM1: ldev = TTY0;	/* convert to our dev #'s */
+    break;
+  case COM2: ldev = TTY1;
+    break;
+  default: printf("Unknown console device\n");
+    return 1;
+  }
+  kprintf("Running with device TTY%d\n",ldev);
+  /* Now have a usable device to talk to with i/o package-- */
+
+  kprintf("\nTrying simple write(4 chars)...\n");
+  got = syswrite(ldev,"hi!\n",4);
+  kprintf("write of 4 returned %d\n",got);
+  delay();  /* time for output to finish, once write-behind is working */
+
+  kprintf("Trying longer write (9 chars)\n");
+  got = syswrite(ldev, "abcdefghi", 9);
+  kprintf("write of 9 returned %d\n",got);
+  delay();  /* time for output to finish, once write-behind is working */
+
+  for (i = 0; i < BUFLEN; i++)
+      buf[i] = 'A'+ i/2;
+  kprintf("\nTrying write of %d-char string...\n", BUFLEN);
+  got = syswrite(ldev, buf, BUFLEN);
+  kprintf("\nwrite returned %d\n", got);
+  delay();
+
+  kprintf("\nType 10 chars input to test typeahead while looping for delay...\n");
+  delay();
+  got = sysread(ldev, buf, 10);	/* should wait for all 10 chars, once fixed */
+  kprintf("\nGot %d chars into buf. Trying write of buf...\n", got);
+  syswrite(ldev, buf, got);
+
+  kprintf("\nTrying another 10 chars read right away...\n");
+  got = sysread(ldev, buf, 10);	/* should wait for input, once fixed */
+  kprintf("\nGot %d chars on second read\n",got);
+  if (got == 0) 
+      kprintf("nothing in buffer\n");	/* expected result until fixed */
+  else 
+      syswrite(ldev, buf, got);	/* should write 10 chars once fixed */
+
+  kprintf("\n\nNow turning echo off--\n");
+  control(ldev, ECHOCONTROL, 0);
+  kprintf("\nType 20 chars input, note lack of echoes...\n");
+  delay();
+  got = sysread(ldev, buf, 20);
+  kprintf("\nTrying write of buf...\n");
+  syswrite(ldev, buf, got);
+  kprintf("\nAsked for 20 characters; got %d\n", got);
+  return 0;
+}
+
+/* the faster the machine you're on, the longer this loop must be */
+void delay()
+{
+  int i;
+
+  kprintf("<doing delay>\n");
+  for (i = 0; i < DELAYLOOPCOUNT; i++)
+   ;
+   }
+aguiney@pe15:~/cs444/hw2$ cat tsyscall.h
+/*********************************************************************
+*       file:           tsyscall.h
+*       author:         Austin Guiney
+*
+*       header file for trap code numbers
+*/
+
+#ifndef TSYSCALL_H
+#define TSYSCALL_H
+
+/* Trap code numbers for exit, read, and write. */
+#define EXIT_TRAP_NUMBER 1
+#define READ_TRAP_NUMBER 3
+#define WRITE_TRAP_NUMBER 4
+
+#endifaguiney@pe15:~/cs444/hw2$ cat tsystm.h
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           tsystm.h
+*       author:         betty o'neil
+*
+*       kernel header for internal prototypes
+*/
+
+#ifndef TSYSTM_H
+#define TSYSTM_H
+
+/* initialize io package*/
+void ioinit(void);
+/* read nchar bytes into buf from dev */
+int sysread(int dev, char *buf, int nchar);
+/* write nchar bytes from buf to dev */
+int syswrite(int dev, char *buf, int nchar);
+/* misc. device functions */
+int syscontrol(int dev, int fncode, int val);
+/* exit to tutor from dev */
+int sysexit(int exitcode);
+/* debugging support */
+void debug_log(char *msg);
+
+#endif
+aguiney@pe15:~/cs444/hw2$ cat tunistf[Kd.h
+/*********************************************************************
+*       file:           tunistd.h
+*       author:         Austin Guiney
+*
+*       header file for write, read, and exit system calls
+*
+*/
+
+
+#ifndef TUNISTD_H
+#define TUNISTD_H
+
+int write(int dev, char *buf, int nchar);
+int read(int dev, char *buf, int nchar);
+int exit(int exitcode);
+
+#endifaguiney@pe15:~/cs444/hw2$ cat tunix.c
+/*********************************************************************
+*       file:           tunix.c
+*       author:         Austin Guiney
+*       
+*       kernel initializer and
+*       trap handler for read, write, and exit system calls
+*
+*/
+
+#include <stdio.h>
+#include <cpu.h>
+#include <gates.h>
+#include "tsystm.h"
+#include "tsyscall.h"
+
+/* Trap handler for system calls. */
+extern IntHandler syscall;
+/* Assembly function that executes user mode code. */
+extern void ustart(void);
+
+/* Initialize the kernel for the operating system. */
+void init_kernel()
+{
+  /* Initialize I/O operations. */
+  ioinit();
+  /* Set up the trap gate so that trap requests can be serviced. */
+  set_trap_gate(0x80,&syscall);
+  /* Call ustart() to start executing user mode code. */
+  ustart();
+}
+
+/* Trap handler for syscall. */
+void syscallc(int user_eax, int devcode, char *buf, int bufflen)
+{
+  /* Get the trap code from %eax. */
+  int trap_code = user_eax;
+
+  /* Perform the proper trap service routine based on the trap code. */
+  switch (trap_code) {
+    /* Perform a sysexit. */
+    case EXIT_TRAP_NUMBER:
+      sysexit(devcode);
+      break;
+    /* Perform a sysread and save the return value in %eax. */
+    case READ_TRAP_NUMBER:
+      user_eax = sysread(devcode, buf, bufflen);
+      break;
+    /* Perform a syswrite and save the return value in %eax. */
+    case WRITE_TRAP_NUMBER:
+      user_eax = syswrite(devcode, buf, bufflen);
+      break;
+    /* Print an error message if there is no valid trap code. */
+    default:
+      kprintf("Error: %d is not a valid trap code.", trap_code);
+    }
+}aguiney@pe15:~/cs444/hw2$ cat ulib.s
+# file :	ulib.s
+# Modified by Austin Guiney for CS444 class.
+# description:	assembler routines for read, write, exit
+# hw2:	 add read, exit				
+
+.globl exit,read,write	
+.text
+# following Linux system call linkage
+# user stack when execution reaches _write:	
+# esp-> return addr
+#       first arg  (to be put in ebx for syscall)
+#       second arg (to be put in ecx)
+#       third arg  (to be put in edx)
+
+# user stack after pushl %ebx, needed to preserve %ebx (not a C scratch reg)
+# esp->  saved-ebx
+# 4(esp) return addr
+# 8(esp) first arg  (to be put in ebx for syscall)
+# 12(esp) second arg (to be put in ecx)
+# 16(esp) third arg  (to be put in edx)
+			
+exit:
+	pushl %ebx					  # save the value of ebx
+	movl 8(%esp),%ebx			  # first arg in %ebx
+	movl $1,%eax				  # syscall # in eax
+	int $0x80					  # trap to kernel
+	popl %ebx					  # restore the value of ebx
+	ret							  # return to caller
+read:
+	pushl %ebx                	  # save the value of ebx
+	movl 8(%esp),%ebx             # first arg in ebx
+	movl 12(%esp),%ecx            # second arg in ecx
+	movl 16(%esp),%edx            # third arg in edx
+	movl $3,%eax                  # syscall # in eax
+	int $0x80                     # trap to kernel
+	popl  %ebx                    # restore the value of ebx
+	ret							  # return to caller
+write:
+	pushl %ebx                	  # save the value of ebx
+	movl 8(%esp),%ebx             # first arg in ebx
+	movl 12(%esp),%ecx            # second arg in ecx
+	movl 16(%esp),%edx            # third arg in edx
+	movl $4,%eax                  # syscall # in eax
+	int $0x80                     # trap to kernel
+	popl  %ebx                    # restore the value of ebx
+	ret							  # return to caller
+aguiney@pe15:~/cs444/hw2$ make clean
+rm -f *.o *.lnx core 
+aguiney@pe15:~/cs444/hw2$ make U=test1
+as --32 -c -o startup0.o startup0.s
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o startup.o startup.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o tunix.o  tunix.c
+as --32 -c -o sysentry.o sysentry.s
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o io.o io.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o tty.o tty.c
+[01m[Ktty.c:[m[K In function ‘[01m[Kirqinthandc[m[K’:
+[01m[Ktty.c:223:14:[m[K [01;35m[Kwarning: [m[Kthis ‘[01m[Kelse[m[K’ clause does not guard... [[01;35m[K-Wmisleading-indentation[m[K]
+  223 |              [01;35m[Kelse[m[K  /* all done transmitting */
+      |              [01;35m[K^~~~[m[K
+[01m[Ktty.c:225:15:[m[K [01;36m[Knote: [m[K...this statement, but the latter is misleadingly indented as if it were guarded by the ‘[01m[Kelse[m[K’
+  225 |               [01;36m[Kbreak[m[K;
+      |               [01;36m[K^~~~~[m[K
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o ioconf.o ioconf.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o queue.o queue/queue.c
+as --32 -c -o crt0.o crt0.s
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o test1.o test1.c
+as --32 -c -o ulib.o ulib.s
+ld -m elf_i386 -N -Ttext 100100 -o test1.lnx \
+  startup0.o startup.o tunix.o sysentry.o io.o tty.o ioconf.o queue.o crt0.o test1.o ulib.o /home/cheungr/serl/tutor-linux/libc/libc.a
+rm -f syms;nm -n test1.lnx>test1.syms;ln -s test1.syms syms
+aguiney@pe15:~/cs444/hw2$ ls -al
+total 280
+drwxrwsr-x 3 aguiney cs444-1G  4096 Nov  3 14:26 .
+drwxrws--- 6 aguiney cs444-1G  4096 Oct 22 14:36 ..
+-rw-r--r-- 1 aguiney cs444-1G   592 Nov  3 14:26 crt0.o
+-rw-r--r-- 1 aguiney cs444-1G   465 Oct 31 15:56 crt0.s
+-rw-r--r-- 1 aguiney cs444-1G 40960 Oct 22 14:36 hw2.doc
+-rw-r--r-- 1 aguiney cs444-1G  2181 Nov  1 18:41 io.c
+-rw-r--r-- 1 aguiney cs444-1G   409 Nov  3 14:05 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G   815 Oct 22 14:36 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G  2984 Nov  3 14:26 ioconf.o
+-rw-r--r-- 1 aguiney cs444-1G  8436 Nov  3 14:26 io.o
+-rw-r--r-- 1 aguiney cs444-1G   697 Oct 22 14:36 io_public.h
+-rw-r--r-- 1 aguiney cs444-1G  2766 Oct 22 14:36 makefile
+drwxrwsr-x 2 aguiney cs444-1G  4096 Oct 22 14:36 queue
+-rw-r--r-- 1 aguiney cs444-1G  8356 Nov  3 14:26 queue.o
+-rw-r--r-- 1 aguiney cs444-1G  1734 Nov  3 14:08 README
+-rw-r--r-- 1 aguiney cs444-1G   584 Nov  3 14:26 startup0.o
+-rw-r--r-- 1 aguiney cs444-1G   429 Oct 31 15:55 startup0.s
+-rw-r--r-- 1 aguiney cs444-1G   493 Oct 31 15:47 startup.c
+-rw-r--r-- 1 aguiney cs444-1G  2540 Nov  3 14:26 startup.o
+lrwxrwxrwx 1 aguiney cs444-1G    10 Nov  3 14:26 syms -> test1.syms
+-rw-r--r-- 1 aguiney cs444-1G   560 Nov  3 14:26 sysentry.o
+-rw-r--r-- 1 aguiney cs444-1G   457 Nov  1 19:27 sysentry.s
+-rw-r--r-- 1 aguiney cs444-1G  2674 Nov  1 19:27 test1.c
+-rwxr-xr-x 1 aguiney cs444-1G 53560 Nov  3 14:26 test1.lnx
+-rw-r--r-- 1 aguiney cs444-1G  8796 Nov  3 14:26 test1.o
+-rw-r--r-- 1 aguiney cs444-1G  2255 Nov  3 14:26 test1.syms
+-rw-r--r-- 1 aguiney cs444-1G  3059 Oct 31 15:50 testio.c
+-rw-r--r-- 1 aguiney cs444-1G   371 Oct 31 15:47 tsyscall.h
+-rw-r--r-- 1 aguiney cs444-1G   685 Oct 31 15:47 tsystm.h
+-rw-r--r-- 1 aguiney cs444-1G  7268 Oct 22 14:36 tty.c
+-rw-r--r-- 1 aguiney cs444-1G   744 Oct 22 14:36 tty.h
+-rw-r--r-- 1 aguiney cs444-1G 12360 Nov  3 14:26 tty.o
+-rw-r--r-- 1 aguiney cs444-1G   415 Oct 22 14:36 tty_public.h
+-rw-r--r-- 1 aguiney cs444-1G   362 Nov  1 18:10 tunistd.h
+-rw-r--r-- 1 aguiney cs444-1G  1594 Nov  1 19:26 tunix.c
+-rw-r--r-- 1 aguiney cs444-1G  7180 Nov  3 14:26 tunix.o
+-rw-r--r-- 1 aguiney cs444-1G   568 Nov  3 14:26 ulib.o
+-rw-r--r-- 1 aguiney cs444-1G  1695 Nov  1 19:30 ulib.s
+aguiney@pe15:~/cs444/hw2$ cat syms
+00000018 a KERNEL_DS
+00000018 a KERNEL_DS
+00100100 T _start
+0010010f T shutdown
+00100110 T _startupc
+0010013c T __x86.get_pc_thunk.bx
+00100140 T init_kernel
+0010017d T syscallc
+00100218 T __x86.get_pc_thunk.ax
+0010021c T syscall
+0010022c T ioinit
+00100289 T sysread
+001002dd T syswrite
+00100331 T syscontrol
+00100385 T sysexit
+001003cf T ttyinit
+001004f1 T ttyread
+00100599 T ttywrite
+001006b0 T ttycontrol
+001006fd T irq4inthandc
+00100721 T irq3inthandc
+00100745 T irqinthandc
+00100986 T debug_log
+001009d9 T init_queue
+00100a47 T emptyqueue
+00100a88 T enqueue
+00100b16 T dequeue
+00100b82 T queuecount
+00100b9b t addone
+00100bc5 T ustart
+00100bda T main
+00100ece T delay
+00100f13 T exit
+00100f21 T read
+00100f37 T write
+00100f4d T irq3inthand
+00100f67 T irq4inthand
+00100f81 T locate_idt
+00100fa3 t locate_gdt
+00100fc5 T get_cr0
+00100fc9 T set_cr0
+00100fd1 T get_cr2
+00100fd5 T get_cr3
+00100fd9 T set_cr3
+00100fe1 T get_eflags
+00100fe4 T set_eflags
+00100fea T cli
+00100fec T sti
+00100fee T invd
+00100ff6 T outpt
+00101001 T inpt
+0010100a T breakpoint
+0010100c T clr_bss
+0010101e T printf
+0010105d T sprintf
+001010ae t sprntf
+001010e7 T strcpy
+0010111c T strlen
+00101150 T set_trap_gate
+0010117a T debug_set_trap_gate
+00101251 T set_intr_gate
+0010127b T debug_set_intr_gate
+00101358 T cpu_cache_off
+00101396 T cpu_cache_on
+001013cf T pic_enable_irq
+00101486 T pic_disable_irq
+00101539 T pic_end_int
+00101565 T pic_end_int2
+001015a2 T kprintf
+001015fc T init_devio
+0010161d T init
+00101696 T rawputc
+0010172e t delay
+0010175b T putc
+0010188b T rawgetc
+00101918 T getc
+0010198b T readyc
+00101a18 T devcontrol
+00101aab T devdescript
+00101b3b T devname
+00101bbe T __x86.get_pc_thunk.cx
+00101bc2 T _fdoprnt
+00101d7f t .L27
+00101da1 t .L24
+00101dc7 t .L26
+00101df8 t .L23
+00101e50 t .L25
+00101e7b t .L29
+00101ea3 t .L21
+00101ecb t .L28
+00101ef3 t .L20
+0010205b t _prtl10
+00102107 t _prtl8
+0010219a t _prtl16
+0010222b t _prtX16
+001022bc t _prtl2
+00102f98 d _GLOBAL_OFFSET_TABLE_
+00102fc0 D debug_log_area
+00102fe0 D devtab
+00103018 d idt_info
+00103018 d idt_limit
+0010301a d idt_addr
+0010301e d gdt_info
+0010301e d gdt_limit
+00103020 d gdt_addr
+00103024 B __bss_start
+00103024 D _edata
+00103040 B sysapi2
+00103060 B ttytab
+00103320 B debug_record
+00103324 B _end
+aguiney@pe15:~/cs444/hw2$ exit
+logout
+Connection to users.cs.umb.edu closed.
+tuser@tutor-vserver:~$ scp aguiney@users.cs.umb.edu:cs444/hw2/test1.* .
+aguiney@users.cs.umb.edu's password: 
+test1.c                                         0%    0     0.0KB/s   --:-- ETAtest1.c                                       100% 2674     2.6KB/s   00:00    
+test1.lnx                                       0%    0     0.0KB/s   --:-- ETAtest1.lnx                                     100%   52KB  52.3KB/s   00:00    
+test1.o                                         0%    0     0.0KB/s   --:-- ETAtest1.o                                       100% 8796     8.6KB/s   00:00    
+test1.syms                                      0%    0     0.0KB/s   --:-- ETAtest1.syms                                    100% 2255     2.2KB/s   00:00    
+tuser@tutor-vserver:~$ ls
+eth.txt  [0m[01;34mlib[0m      [01;32mtest1.lnx[0m  test1.syms  [01;34mtestelf[0m       typescript
+[01;34minclude[0m  test1.c  test1.o    [01;34mtestaout[0m    testelf.syms
+tuser@tutor-vserver:~$ mtip -f test1.lnx
+For command help, type ~?
+For help on args, rerun without args
+Code starts at 0x100100
+Using board # 1 
+Please type <CR> to confirm console setting: 
+Setting console dev to COM2Console: colour EGA+ 80x25
+COM1 at 0x03f8 (irq = 4) is a 16550A
+COM2 at 0x02f8 (irq = 3) is a 16550A
+
+                 Welcome to UMB Tutor for the PC
+   UMB Tutor is a 32-bit protected-mode PC debugger/downloader,
+       based on Linux, UMB Tutor for m68k, and remote gdb.
+UMB Tutor is free software and you are welcome to distribute copies
+of it under certain conditions.  There is no warranty for this program.
+The copyright and warranty provisions follow the Gnu general public
+license, available for view in gdb and elsewhere.  Full sources available.
+--bugs, suggestions, questions to eoneil@cs.umb.edu
+
+Exception 3 at EIP=00057a9b: Breakpoint
+Tutor> ~downloading test1.lnx
+
+............Done.
+
+Download done, setting EIP to 100100.
+Tutor> go 100100
+Running with device TTY1
+
+Trying simple write(4 chars)...
+hi!
+write of 4 returned 4
+<doing delay>
+Trying longer write (9 chars)
+abcdefghiwrite of 9 returned 9
+<doing delay>
+
+Trying write of 80-char string...
+AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQRRSSTTUUVVWWXXYYZZ[[\\]]^^__``aabbccddeeffgghh
+write returned 80
+<doing delay>
+
+Type 10 chars input to test typeahead while looping for delay...
+<doing delay>
+austinguin
+Got 10 chars into buf. Trying write of buf...
+austinguin
+Trying another 10 chars read right away...
+austincs44
+Got 10 chars on second read
+austincs44
+
+Now turning echo off--
+
+Type 20 chars input, note lack of echoes...
+<doing delay>
+
+Trying write of buf...
+jshduejsnksnskjsjsnf
+Asked for 20 characters; got 20
+
+Shutting system down...
+Exit code is: 0.
+Exception 3 at EIP=00100110: Breakpoint
+Tutor> 
+Tutor> 
+Quit handler: 
+killing process 1987 Leaving board #1
+tuser@tutor-vserver:~$ exit
+exit
+
+Script done on Wed 03 Nov 2021 02:29:34 PM EDT
