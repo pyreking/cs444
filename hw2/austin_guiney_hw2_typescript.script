@@ -1,23 +1,23 @@
-Script started on Wed 03 Nov 2021 02:22:26 PM EDT
+Script started on Tue 09 Nov 2021 06:27:13 PM EST
 tuser@tutor-vserver:~$ ls
 eth.txt  [0m[01;34minclude[0m  [01;34mlib[0m  [01;34mtestaout[0m  [01;34mtestelf[0m  testelf.syms  typescript
 tuser@tutor-vserver:~$ ssh aguiney@users.cs.umb.edu
 aguiney@users.cs.umb.edu's password: 
 Welcome to Ubuntu 20.04.3 LTS (GNU/Linux 5.4.0-81-generic x86_64)
 
-  System information as of Wed 03 Nov 2021 02:22:39 PM EDT
+  System information as of Tue 09 Nov 2021 06:27:25 PM EST
 
-  System load:  0.14                Temperature:           46.0 C
-  Usage of /:   15.4% of 195.86GB   Processes:             462
-  Memory usage: 3%                  Users logged in:       13
+  System load:  0.0                 Temperature:           46.0 C
+  Usage of /:   15.6% of 195.86GB   Processes:             517
+  Memory usage: 3%                  Users logged in:       17
   Swap usage:   0%                  IPv4 address for eno1: 158.121.104.215
 
 Contact: operator@cs.umb.edu or 617-287-6480
-Last login: Wed Nov  3 14:16:08 2021 from 172.21.202.154
+Last login: Tue Nov  9 18:25:46 2021 from 108.1.153.226
 aguiney@pe15:~$ cd cs444/hw2
 aguiney@pe15:~/cs444/hw2$ ls -al
 total 140
-drwxrwsr-x 3 aguiney cs444-1G  4096 Nov  3 14:21 .
+drwxrwsr-x 3 aguiney cs444-1G  4096 Nov  9 18:26 .
 drwxrws--- 6 aguiney cs444-1G  4096 Oct 22 14:36 ..
 -rw-r--r-- 1 aguiney cs444-1G   465 Oct 31 15:56 crt0.s
 -rw-r--r-- 1 aguiney cs444-1G 40960 Oct 22 14:36 hw2.doc
@@ -30,10 +30,10 @@ drwxrwsr-x 2 aguiney cs444-1G  4096 Oct 22 14:36 queue
 -rw-r--r-- 1 aguiney cs444-1G  1734 Nov  3 14:08 README
 -rw-r--r-- 1 aguiney cs444-1G   429 Oct 31 15:55 startup0.s
 -rw-r--r-- 1 aguiney cs444-1G   493 Oct 31 15:47 startup.c
-lrwxrwxrwx 1 aguiney cs444-1G    10 Nov  3 14:21 syms -> test1.syms
+lrwxrwxrwx 1 aguiney cs444-1G    10 Nov  3 14:26 syms -> test1.syms
 -rw-r--r-- 1 aguiney cs444-1G   457 Nov  1 19:27 sysentry.s
 -rw-r--r-- 1 aguiney cs444-1G  2674 Nov  1 19:27 test1.c
--rw-r--r-- 1 aguiney cs444-1G  2255 Nov  3 14:21 test1.syms
+-rw-r--r-- 1 aguiney cs444-1G  2255 Nov  3 14:26 test1.syms
 -rw-r--r-- 1 aguiney cs444-1G  3059 Oct 31 15:50 testio.c
 -rw-r--r-- 1 aguiney cs444-1G   371 Oct 31 15:47 tsyscall.h
 -rw-r--r-- 1 aguiney cs444-1G   685 Oct 31 15:47 tsystm.h
@@ -43,56 +43,6 @@ lrwxrwxrwx 1 aguiney cs444-1G    10 Nov  3 14:21 syms -> test1.syms
 -rw-r--r-- 1 aguiney cs444-1G   362 Nov  1 18:10 tunistd.h
 -rw-r--r-- 1 aguiney cs444-1G  1594 Nov  1 19:26 tunix.c
 -rw-r--r-- 1 aguiney cs444-1G  1695 Nov  1 19:30 ulib.s
-aguiney@pe15:~/cs444/hw2$ cat README
-Author: Austin Guiney
-Date: November 3rd, 2021
-
-Instructions:
-run `make clean` to removed the executable files from the directior.
-run `make U=test1` to build the executable file.
-run `mtip -f test1.lnx` and `~d` on tutor-vserver VM to download the program onto tutor.
-run `go 100100` on tutor to run the program.
-
-Typescript file:
-austin_guiney_hw2_typescript.script.
-
-Program files:
-
-i) Shared between user and kernel:
-
-   tty_public.h: device numbers
-   tsyscall.h: syscall numbers
-
-ii) Kernel files:
-
-   ioconf.h, tty.h: i/o headers used only by kernel
-   tsystm.h: syscall dispatch, kernel function prototypes (a copy is posted)
-   startup0.s: this file is provided.  Sets up stack, calls into startup1.c
-   startup.c: calls kernel initialization routine
-   tunix.c:   has kernel init routine and trap call handler routine.
-
-   sysentry.s:  Trap handler's assembler envelope routine syscall for the trap resulting from a
-                  system call--needs to push eax, ebx, ecx, edx on stack, where they can be accessed from C,
-                  call syscallc, then pops, iret.
-
-   io.c: defines sysread, syswrite, syscontrol, and sysexit.
-
-   ioconf.c, ioconf.h:  from hw1. 
-
-   tty.c, tty.h, tty_public.h:  tty driver from hw1, unchanged
-
-iii) User-level files:
-
-   tunistd.h: prototypes for user mode system calls (like UNIX /usr/include/unistd.h)
-   test1.c:  has main()
-   ulib.s:  library set-ups for syscalls: read, write, exit.
-   crt0.s:  user-level "C startup module" sets up stack, calls main, does exit syscall.  Entry point ustart. 
-              
-
-iv) hw1 solution files not directly used in hw2:  
-   io_public.h:  like tunistd.h above, but also lists ioinit(), and not exit().
-   testio.c:     tty i/o driver.
-
 aguiney@pe15:~/cs444/hw2$ cat crt0.s
 # file: crt0.s
 # Description: Enters into the main function in test1.c
@@ -108,121 +58,7 @@ ustart:
     call main               # Call into main function in test1.c.
     pushl %eax              # Push the exit code to the stack.
     call exit               # Call into the exit function.
-aguiney@pe15:~/cs444/hw2$ cat io.c
-/*********************************************************************
-*       Modified by Austin Guiney for CS444 class.
-*       file:           io.c
-*       author:         betty o'neil
-*
-*       device-independent i/o package for SAPC
-*
-*/
-
-/* hw2: delete include of io_public.h here, */
-/*  put kernel-fn proto's, ioinit, sysread, etc., in tsystm.h */
-#include <stdio.h>
-#include <cpu.h>
-#include "tsystm.h"
-#include "ioconf.h"
-
-/* Assembly function for exiting to tutor. */
-extern void shutdown(void);
-
-/*====================================================================
-*
-* i/o initialization loop for SAPC devices
-*
-*/
-
-void ioinit()
-{
-  int i;
-
-  cli();
-  for (i = 0; i < NDEVS; i++)
-    devtab[i].dvinit(i);	/* call device-specific init routine */
-  sti();
-}
-
-/*====================================================================
-*
-*       read function calling routine for SAPC devices
-*       (hw2: rename to "sysread" for the kernel)
-*/
-
-int sysread(int dev, char *buf, int nchar)
-{
-  if (dev < 0 || dev >= NDEVS) return -1;      /* fail */
-  return devtab[dev].dvread(dev, buf, nchar); /* call dev-specific routine */
-}
-
-/*====================================================================
-*
-*       write function calling routine for SAPC devices
-*       (rename to "syswrite" for the kernel)
-*/
-int syswrite(int dev, char *buf, int nchar)
-{
-  if (dev < 0 || dev >= NDEVS) return -1;       /* fail */
-  return devtab[dev].dvwrite(dev, buf, nchar); /* call dev-specific routine */
-}
-
-/*====================================================================
-*
-*       control function calling routine for SAPC devices
-*       (you can drop this one for hw2)
-*/
-int syscontrol(int dev, int fncode, int val)  /* note: val could be pointer */
-{
-  if (dev < 0 || dev >= NDEVS) return -1;          /* fail */
-  return devtab[dev].dvcontrol(dev, fncode, val); /* dev-specific routine */
-}
-
-/*====================================================================
-*
-*       exit function calling routine for SAPC devices
-*/
-
-int sysexit(int exitcode)
-{
-  kprintf("\nShutting system down...\n");
-  kprintf("Exit code is: %d.\n", exitcode);
-  shutdown();
-
-  return exitcode;
-}aguiney@pe15:~/cs444/hw2$ cat startup0.s
-# file: startup0.s
-# Description:
-# asm startup file
-# very first module in load
-# Modified by Austin Guiney for CS444 class.
-
-.globl _start, _startupc, shutdown
-
-_start:     movl $0x3ffff0, %esp   # set user program stack
-            movl $0, %ebp          # make debugger backtrace terminate here
-            call _startupc         # call C startup, which calls user main
-shutdown:   int $3                 # return to Tutor
-
-
-aguiney@pe15:~/cs444/hw2$ cat startup.c
-/*********************************************************************
-*       file:           startup.c
-*       author:         Austin Guiney
-*
-*       C startup file, called from startup0.s
-*/
-
-extern void clr_bss(void);
-extern void init_devio(void);
-extern void init_kernel(void);
-
-void _startupc()
-{
-  clr_bss();			        /* clear BSS area (uninitialized data) */
-  init_devio();			      /* latch onto Tutor-supplied info, code */
-  init_kernel();			    /* execute user-supplied main */
-}aguiney@pe15:~/cs444/hw2$ cat sysentry.s
+aguiney@pe15:~/cs444/hw2$ cat sysentry.s
 # file: sysentry.s
 # Description: Enters into the trap handler in tunix.c.
 # Modified by Austin Guiney for CS444 class.
@@ -239,6 +75,37 @@ syscall:
     popl %ecx
     popl %edx
     iret          # return to caller
+aguiney@pe15:~/cs444/hw2$ cat tsyscall.h
+/*********************************************************************
+*       file:           tsyscall.h
+*       author:         Austin Guiney
+*
+*       header file for trap code numbers
+*/
+
+#ifndef TSYSCALL_H
+#define TSYSCALL_H
+
+/* Trap code numbers for exit, read, and write. */
+#define EXIT_TRAP_NUMBER 1
+#define READ_TRAP_NUMBER 3
+#define WRITE_TRAP_NUMBER 4
+
+#endifaguiney@pe15:~/cs444/hw2$ cat startup0.s
+# file: startup0.s
+# Description:
+# asm startup file
+# very first module in load
+# Modified by Austin Guiney for CS444 class.
+
+.globl _start, _startupc, shutdown
+
+_start:     movl $0x3ffff0, %esp   # set user program stack
+            movl $0, %ebp          # make debugger backtrace terminate here
+            call _startupc         # call C startup, which calls user main
+shutdown:   int $3                 # return to Tutor
+
+
 aguiney@pe15:~/cs444/hw2$ cat test1.c
 /*********************************************************************
 *       Modified by Austin Guiney for CS444 class.
@@ -329,6 +196,204 @@ void delay(void)
   kprintf("<doing delay>\n");
   for (i = 0; i < DELAYLOOPCOUNT; i++)
    ;
+}aguiney@pe15:~/cs444/hw2$ cat tsystm.h
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           tsystm.h
+*       author:         betty o'neil
+*
+*       kernel header for internal prototypes
+*/
+
+#ifndef TSYSTM_H
+#define TSYSTM_H
+
+/* initialize io package*/
+void ioinit(void);
+/* read nchar bytes into buf from dev */
+int sysread(int dev, char *buf, int nchar);
+/* write nchar bytes from buf to dev */
+int syswrite(int dev, char *buf, int nchar);
+/* misc. device functions */
+int syscontrol(int dev, int fncode, int val);
+/* exit to tutor from dev */
+int sysexit(int exitcode);
+/* debugging support */
+void debug_log(char *msg);
+
+#endif
+aguiney@pe15:~/cs444/hw2$ cat tunistd.h
+/*********************************************************************
+*       file:           tunistd.h
+*       author:         Austin Guiney
+*
+*       header file for write, read, and exit system calls
+*
+*/
+
+
+#ifndef TUNISTD_H
+#define TUNISTD_H
+
+int write(int dev, char *buf, int nchar);
+int read(int dev, char *buf, int nchar);
+int exit(int exitcode);
+
+#endifaguiney@pe15:~/cs444/hw2$ cat io.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           io.c
+*       author:         betty o'neil
+*
+*       device-independent i/o package for SAPC
+*
+*/
+
+/* hw2: delete include of io_public.h here, */
+/*  put kernel-fn proto's, ioinit, sysread, etc., in tsystm.h */
+#include <stdio.h>
+#include <cpu.h>
+#include "tsystm.h"
+#include "ioconf.h"
+
+/* Assembly function for exiting to tutor. */
+extern void shutdown(void);
+
+/*====================================================================
+*
+* i/o initialization loop for SAPC devices
+*
+*/
+
+void ioinit()
+{
+  int i;
+
+  cli();
+  for (i = 0; i < NDEVS; i++)
+    devtab[i].dvinit(i);	/* call device-specific init routine */
+  sti();
+}
+
+/*====================================================================
+*
+*       read function calling routine for SAPC devices
+*       (hw2: rename to "sysread" for the kernel)
+*/
+
+int sysread(int dev, char *buf, int nchar)
+{
+  if (dev < 0 || dev >= NDEVS) return -1;      /* fail */
+  return devtab[dev].dvread(dev, buf, nchar); /* call dev-specific routine */
+}
+
+/*====================================================================
+*
+*       write function calling routine for SAPC devices
+*       (rename to "syswrite" for the kernel)
+*/
+int syswrite(int dev, char *buf, int nchar)
+{
+  if (dev < 0 || dev >= NDEVS) return -1;       /* fail */
+  return devtab[dev].dvwrite(dev, buf, nchar); /* call dev-specific routine */
+}
+
+/*====================================================================
+*
+*       control function calling routine for SAPC devices
+*       (you can drop this one for hw2)
+*/
+int syscontrol(int dev, int fncode, int val)  /* note: val could be pointer */
+{
+  if (dev < 0 || dev >= NDEVS) return -1;          /* fail */
+  return devtab[dev].dvcontrol(dev, fncode, val); /* dev-specific routine */
+}
+
+/*====================================================================
+*
+*       exit function calling routine for SAPC devices
+*/
+
+int sysexit(int exitcode)
+{
+  kprintf("\nShutting system down...\n");
+  kprintf("Exit code is: %d.\n", exitcode);
+  shutdown();
+
+  return exitcode;
+}aguiney@pe15:~/cs444/hw2$ cat startup.c
+/*********************************************************************
+*       file:           startup.c
+*       author:         Austin Guiney
+*
+*       C startup file, called from startup0.s
+*/
+
+extern void clr_bss(void);
+extern void init_devio(void);
+extern void init_kernel(void);
+
+void _startupc()
+{
+  clr_bss();			        /* clear BSS area (uninitialized data) */
+  init_devio();			      /* latch onto Tutor-supplied info, code */
+  init_kernel();			    /* execute user-supplied main */
+}aguiney@pe15:~/cs444/hw2$ cat tunix.c
+/*********************************************************************
+*       file:           tunix.c
+*       author:         Austin Guiney
+*       
+*       kernel initializer and
+*       trap handler for read, write, and exit system calls
+*
+*/
+
+#include <stdio.h>
+#include <cpu.h>
+#include <gates.h>
+#include "tsystm.h"
+#include "tsyscall.h"
+
+/* Trap handler for system calls. */
+extern IntHandler syscall;
+/* Assembly function that executes user mode code. */
+extern void ustart(void);
+
+/* Initialize the kernel for the operating system. */
+void init_kernel()
+{
+  /* Initialize I/O operations. */
+  ioinit();
+  /* Set up the trap gate so that trap requests can be serviced. */
+  set_trap_gate(0x80,&syscall);
+  /* Call ustart() to start executing user mode code. */
+  ustart();
+}
+
+/* Trap handler for syscall. */
+void syscallc(int user_eax, int devcode, char *buf, int bufflen)
+{
+  /* Get the trap code from %eax. */
+  int trap_code = user_eax;
+
+  /* Perform the proper trap service routine based on the trap code. */
+  switch (trap_code) {
+    /* Perform a sysexit. */
+    case EXIT_TRAP_NUMBER:
+      sysexit(devcode);
+      break;
+    /* Perform a sysread and save the return value in %eax. */
+    case READ_TRAP_NUMBER:
+      user_eax = sysread(devcode, buf, bufflen);
+      break;
+    /* Perform a syswrite and save the return value in %eax. */
+    case WRITE_TRAP_NUMBER:
+      user_eax = syswrite(devcode, buf, bufflen);
+      break;
+    /* Print an error message if there is no valid trap code. */
+    default:
+      kprintf("Error: %d is not a valid trap code.", trap_code);
+    }
 }aguiney@pe15:~/cs444/hw2$ cat testio.c
 /*********************************************************************
 *       Modified by Austin Guiney for CS444 class.
@@ -422,122 +487,7 @@ void delay()
   for (i = 0; i < DELAYLOOPCOUNT; i++)
    ;
    }
-aguiney@pe15:~/cs444/hw2$ cat tsyscall.h
-/*********************************************************************
-*       file:           tsyscall.h
-*       author:         Austin Guiney
-*
-*       header file for trap code numbers
-*/
-
-#ifndef TSYSCALL_H
-#define TSYSCALL_H
-
-/* Trap code numbers for exit, read, and write. */
-#define EXIT_TRAP_NUMBER 1
-#define READ_TRAP_NUMBER 3
-#define WRITE_TRAP_NUMBER 4
-
-#endifaguiney@pe15:~/cs444/hw2$ cat tsystm.h
-/*********************************************************************
-*       Modified by Austin Guiney for CS444 class.
-*       file:           tsystm.h
-*       author:         betty o'neil
-*
-*       kernel header for internal prototypes
-*/
-
-#ifndef TSYSTM_H
-#define TSYSTM_H
-
-/* initialize io package*/
-void ioinit(void);
-/* read nchar bytes into buf from dev */
-int sysread(int dev, char *buf, int nchar);
-/* write nchar bytes from buf to dev */
-int syswrite(int dev, char *buf, int nchar);
-/* misc. device functions */
-int syscontrol(int dev, int fncode, int val);
-/* exit to tutor from dev */
-int sysexit(int exitcode);
-/* debugging support */
-void debug_log(char *msg);
-
-#endif
-aguiney@pe15:~/cs444/hw2$ cat tunistf[Kd.h
-/*********************************************************************
-*       file:           tunistd.h
-*       author:         Austin Guiney
-*
-*       header file for write, read, and exit system calls
-*
-*/
-
-
-#ifndef TUNISTD_H
-#define TUNISTD_H
-
-int write(int dev, char *buf, int nchar);
-int read(int dev, char *buf, int nchar);
-int exit(int exitcode);
-
-#endifaguiney@pe15:~/cs444/hw2$ cat tunix.c
-/*********************************************************************
-*       file:           tunix.c
-*       author:         Austin Guiney
-*       
-*       kernel initializer and
-*       trap handler for read, write, and exit system calls
-*
-*/
-
-#include <stdio.h>
-#include <cpu.h>
-#include <gates.h>
-#include "tsystm.h"
-#include "tsyscall.h"
-
-/* Trap handler for system calls. */
-extern IntHandler syscall;
-/* Assembly function that executes user mode code. */
-extern void ustart(void);
-
-/* Initialize the kernel for the operating system. */
-void init_kernel()
-{
-  /* Initialize I/O operations. */
-  ioinit();
-  /* Set up the trap gate so that trap requests can be serviced. */
-  set_trap_gate(0x80,&syscall);
-  /* Call ustart() to start executing user mode code. */
-  ustart();
-}
-
-/* Trap handler for syscall. */
-void syscallc(int user_eax, int devcode, char *buf, int bufflen)
-{
-  /* Get the trap code from %eax. */
-  int trap_code = user_eax;
-
-  /* Perform the proper trap service routine based on the trap code. */
-  switch (trap_code) {
-    /* Perform a sysexit. */
-    case EXIT_TRAP_NUMBER:
-      sysexit(devcode);
-      break;
-    /* Perform a sysread and save the return value in %eax. */
-    case READ_TRAP_NUMBER:
-      user_eax = sysread(devcode, buf, bufflen);
-      break;
-    /* Perform a syswrite and save the return value in %eax. */
-    case WRITE_TRAP_NUMBER:
-      user_eax = syswrite(devcode, buf, bufflen);
-      break;
-    /* Print an error message if there is no valid trap code. */
-    default:
-      kprintf("Error: %d is not a valid trap code.", trap_code);
-    }
-}aguiney@pe15:~/cs444/hw2$ cat ulib.s
+aguiney@pe15:~/cs444/hw2$ cat ulib.s
 # file :	ulib.s
 # Modified by Austin Guiney for CS444 class.
 # description:	assembler routines for read, write, exit
@@ -584,8 +534,86 @@ write:
 	int $0x80                     # trap to kernel
 	popl  %ebx                    # restore the value of ebx
 	ret							  # return to caller
+aguiney@pe15:~/cs444/hw2$ cat README
+Author: Austin Guiney
+Date: November 3rd, 2021
+
+Instructions:
+run `make clean` to removed the executable files from the directior.
+run `make U=test1` to build the executable file.
+run `mtip -f test1.lnx` and `~d` on tutor-vserver VM to download the program onto tutor.
+run `go 100100` on tutor to run the program.
+
+Typescript file:
+austin_guiney_hw2_typescript.script.
+
+Program files:
+
+i) Shared between user and kernel:
+
+   tty_public.h: device numbers
+   tsyscall.h: syscall numbers
+
+ii) Kernel files:
+
+   ioconf.h, tty.h: i/o headers used only by kernel
+   tsystm.h: syscall dispatch, kernel function prototypes (a copy is posted)
+   startup0.s: this file is provided.  Sets up stack, calls into startup1.c
+   startup.c: calls kernel initialization routine
+   tunix.c:   has kernel init routine and trap call handler routine.
+
+   sysentry.s:  Trap handler's assembler envelope routine syscall for the trap resulting from a
+                  system call--needs to push eax, ebx, ecx, edx on stack, where they can be accessed from C,
+                  call syscallc, then pops, iret.
+
+   io.c: defines sysread, syswrite, syscontrol, and sysexit.
+
+   ioconf.c, ioconf.h:  from hw1. 
+
+   tty.c, tty.h, tty_public.h:  tty driver from hw1, unchanged
+
+iii) User-level files:
+
+   tunistd.h: prototypes for user mode system calls (like UNIX /usr/include/unistd.h)
+   test1.c:  has main()
+   ulib.s:  library set-ups for syscalls: read, write, exit.
+   crt0.s:  user-level "C startup module" sets up stack, calls main, does exit syscall.  Entry point ustart. 
+              
+
+iv) hw1 solution files not directly used in hw2:  
+   io_public.h:  like tunistd.h above, but also lists ioinit(), and not exit().
+   testio.c:     tty i/o driver.
+
 aguiney@pe15:~/cs444/hw2$ make clean
 rm -f *.o *.lnx core 
+aguiney@pe15:~/cs444/hw2$ ls -al
+total 140
+drwxrwsr-x 3 aguiney cs444-1G  4096 Nov  9 18:26 .
+drwxrws--- 6 aguiney cs444-1G  4096 Oct 22 14:36 ..
+-rw-r--r-- 1 aguiney cs444-1G   465 Oct 31 15:56 crt0.s
+-rw-r--r-- 1 aguiney cs444-1G 40960 Oct 22 14:36 hw2.doc
+-rw-r--r-- 1 aguiney cs444-1G  2181 Nov  1 18:41 io.c
+-rw-r--r-- 1 aguiney cs444-1G   409 Nov  3 14:05 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G   815 Oct 22 14:36 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G   697 Oct 22 14:36 io_public.h
+-rw-r--r-- 1 aguiney cs444-1G  2766 Oct 22 14:36 makefile
+drwxrwsr-x 2 aguiney cs444-1G  4096 Oct 22 14:36 queue
+-rw-r--r-- 1 aguiney cs444-1G  1734 Nov  3 14:08 README
+-rw-r--r-- 1 aguiney cs444-1G   429 Oct 31 15:55 startup0.s
+-rw-r--r-- 1 aguiney cs444-1G   493 Oct 31 15:47 startup.c
+lrwxrwxrwx 1 aguiney cs444-1G    10 Nov  3 14:26 syms -> test1.syms
+-rw-r--r-- 1 aguiney cs444-1G   457 Nov  1 19:27 sysentry.s
+-rw-r--r-- 1 aguiney cs444-1G  2674 Nov  1 19:27 test1.c
+-rw-r--r-- 1 aguiney cs444-1G  2255 Nov  3 14:26 test1.syms
+-rw-r--r-- 1 aguiney cs444-1G  3059 Oct 31 15:50 testio.c
+-rw-r--r-- 1 aguiney cs444-1G   371 Oct 31 15:47 tsyscall.h
+-rw-r--r-- 1 aguiney cs444-1G   685 Oct 31 15:47 tsystm.h
+-rw-r--r-- 1 aguiney cs444-1G  7268 Oct 22 14:36 tty.c
+-rw-r--r-- 1 aguiney cs444-1G   744 Oct 22 14:36 tty.h
+-rw-r--r-- 1 aguiney cs444-1G   415 Oct 22 14:36 tty_public.h
+-rw-r--r-- 1 aguiney cs444-1G   362 Nov  1 18:10 tunistd.h
+-rw-r--r-- 1 aguiney cs444-1G  1594 Nov  1 19:26 tunix.c
+-rw-r--r-- 1 aguiney cs444-1G  1695 Nov  1 19:30 ulib.s
 aguiney@pe15:~/cs444/hw2$ make U=test1
 as --32 -c -o startup0.o startup0.s
 gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o startup.o startup.c
@@ -610,43 +638,43 @@ ld -m elf_i386 -N -Ttext 100100 -o test1.lnx \
 rm -f syms;nm -n test1.lnx>test1.syms;ln -s test1.syms syms
 aguiney@pe15:~/cs444/hw2$ ls -al
 total 280
-drwxrwsr-x 3 aguiney cs444-1G  4096 Nov  3 14:26 .
+drwxrwsr-x 3 aguiney cs444-1G  4096 Nov  9 18:31 .
 drwxrws--- 6 aguiney cs444-1G  4096 Oct 22 14:36 ..
--rw-r--r-- 1 aguiney cs444-1G   592 Nov  3 14:26 crt0.o
+-rw-r--r-- 1 aguiney cs444-1G   592 Nov  9 18:31 crt0.o
 -rw-r--r-- 1 aguiney cs444-1G   465 Oct 31 15:56 crt0.s
 -rw-r--r-- 1 aguiney cs444-1G 40960 Oct 22 14:36 hw2.doc
 -rw-r--r-- 1 aguiney cs444-1G  2181 Nov  1 18:41 io.c
 -rw-r--r-- 1 aguiney cs444-1G   409 Nov  3 14:05 ioconf.c
 -rw-r--r-- 1 aguiney cs444-1G   815 Oct 22 14:36 ioconf.h
--rw-r--r-- 1 aguiney cs444-1G  2984 Nov  3 14:26 ioconf.o
--rw-r--r-- 1 aguiney cs444-1G  8436 Nov  3 14:26 io.o
+-rw-r--r-- 1 aguiney cs444-1G  2984 Nov  9 18:31 ioconf.o
+-rw-r--r-- 1 aguiney cs444-1G  8436 Nov  9 18:31 io.o
 -rw-r--r-- 1 aguiney cs444-1G   697 Oct 22 14:36 io_public.h
 -rw-r--r-- 1 aguiney cs444-1G  2766 Oct 22 14:36 makefile
 drwxrwsr-x 2 aguiney cs444-1G  4096 Oct 22 14:36 queue
--rw-r--r-- 1 aguiney cs444-1G  8356 Nov  3 14:26 queue.o
+-rw-r--r-- 1 aguiney cs444-1G  8356 Nov  9 18:31 queue.o
 -rw-r--r-- 1 aguiney cs444-1G  1734 Nov  3 14:08 README
--rw-r--r-- 1 aguiney cs444-1G   584 Nov  3 14:26 startup0.o
+-rw-r--r-- 1 aguiney cs444-1G   584 Nov  9 18:31 startup0.o
 -rw-r--r-- 1 aguiney cs444-1G   429 Oct 31 15:55 startup0.s
 -rw-r--r-- 1 aguiney cs444-1G   493 Oct 31 15:47 startup.c
--rw-r--r-- 1 aguiney cs444-1G  2540 Nov  3 14:26 startup.o
-lrwxrwxrwx 1 aguiney cs444-1G    10 Nov  3 14:26 syms -> test1.syms
--rw-r--r-- 1 aguiney cs444-1G   560 Nov  3 14:26 sysentry.o
+-rw-r--r-- 1 aguiney cs444-1G  2540 Nov  9 18:31 startup.o
+lrwxrwxrwx 1 aguiney cs444-1G    10 Nov  9 18:31 syms -> test1.syms
+-rw-r--r-- 1 aguiney cs444-1G   560 Nov  9 18:31 sysentry.o
 -rw-r--r-- 1 aguiney cs444-1G   457 Nov  1 19:27 sysentry.s
 -rw-r--r-- 1 aguiney cs444-1G  2674 Nov  1 19:27 test1.c
--rwxr-xr-x 1 aguiney cs444-1G 53560 Nov  3 14:26 test1.lnx
--rw-r--r-- 1 aguiney cs444-1G  8796 Nov  3 14:26 test1.o
--rw-r--r-- 1 aguiney cs444-1G  2255 Nov  3 14:26 test1.syms
+-rwxr-xr-x 1 aguiney cs444-1G 53560 Nov  9 18:31 test1.lnx
+-rw-r--r-- 1 aguiney cs444-1G  8796 Nov  9 18:31 test1.o
+-rw-r--r-- 1 aguiney cs444-1G  2255 Nov  9 18:31 test1.syms
 -rw-r--r-- 1 aguiney cs444-1G  3059 Oct 31 15:50 testio.c
 -rw-r--r-- 1 aguiney cs444-1G   371 Oct 31 15:47 tsyscall.h
 -rw-r--r-- 1 aguiney cs444-1G   685 Oct 31 15:47 tsystm.h
 -rw-r--r-- 1 aguiney cs444-1G  7268 Oct 22 14:36 tty.c
 -rw-r--r-- 1 aguiney cs444-1G   744 Oct 22 14:36 tty.h
--rw-r--r-- 1 aguiney cs444-1G 12360 Nov  3 14:26 tty.o
+-rw-r--r-- 1 aguiney cs444-1G 12360 Nov  9 18:31 tty.o
 -rw-r--r-- 1 aguiney cs444-1G   415 Oct 22 14:36 tty_public.h
 -rw-r--r-- 1 aguiney cs444-1G   362 Nov  1 18:10 tunistd.h
 -rw-r--r-- 1 aguiney cs444-1G  1594 Nov  1 19:26 tunix.c
--rw-r--r-- 1 aguiney cs444-1G  7180 Nov  3 14:26 tunix.o
--rw-r--r-- 1 aguiney cs444-1G   568 Nov  3 14:26 ulib.o
+-rw-r--r-- 1 aguiney cs444-1G  7180 Nov  9 18:31 tunix.o
+-rw-r--r-- 1 aguiney cs444-1G   568 Nov  9 18:31 ulib.o
 -rw-r--r-- 1 aguiney cs444-1G  1695 Nov  1 19:30 ulib.s
 aguiney@pe15:~/cs444/hw2$ cat syms
 00000018 a KERNEL_DS
@@ -760,6 +788,8 @@ aguiney@pe15:~/cs444/hw2$ cat syms
 00103060 B ttytab
 00103320 B debug_record
 00103324 B _end
+aguiney@pe15:~/cs444/hw2$ ^C
+aguiney@pe15:~/cs444/hw2$ ^C
 aguiney@pe15:~/cs444/hw2$ exit
 logout
 Connection to users.cs.umb.edu closed.
@@ -819,9 +849,9 @@ austinguin
 Got 10 chars into buf. Trying write of buf...
 austinguin
 Trying another 10 chars read right away...
-austincs44
+ausjjfkjdk
 Got 10 chars on second read
-austincs44
+ausjjfkjdk
 
 Now turning echo off--
 
@@ -829,17 +859,107 @@ Type 20 chars input, note lack of echoes...
 <doing delay>
 
 Trying write of buf...
-jshduejsnksnskjsjsnf
+dkdjndjdjdndjdjdjdjd
 Asked for 20 characters; got 20
 
 Shutting system down...
 Exit code is: 0.
 Exception 3 at EIP=00100110: Breakpoint
+Tutor> jd  md 300000
+00300000    2a 3e 68 2a 3e 69 2a 3e 21 2a 3e 0a 2a 2a 3e 61 *>h*>i*>!*>.**>a
+Tutor> 
+00300010    2a 3e 62 2a 3e 63 2a 3e 64 2a 3e 65 2a 3e 66 2a *>b*>c*>d*>e*>f*
+Tutor> 
+00300020    2a 3e 67 2a 2a 3e 68 2a 2a 3e 69 2a 2a 3e 41 2a *>g**>h**>i**>A*
+Tutor> 
+00300030    3e 41 2a 3e 42 2a 3e 42 2a 3e 43 2a 3e 43 2a 2a >A*>B*>B*>C*>C**
+Tutor> 
+00300040    3e 44 2a 2a 3e 44 2a 2a 3e 45 2a 2a 3e 45 2a 2a >D**>D**>E**>E**
+Tutor> 
+00300050    3e 46 2a 2a 3e 46 2a 2a 3e 47 2a 2a 3e 47 2a 2a >F**>F**>G**>G**
+Tutor> 
+00300060    3e 48 2a 2a 3e 48 2a 2a 3e 49 2a 2a 3e 49 2a 2a >H**>H**>I**>I**
+Tutor> 
+00300070    3e 4a 2a 2a 3e 4a 2a 2a 3e 4b 2a 2a 3e 4b 2a 2a >J**>J**>K**>K**
+Tutor> 
+00300080    3e 4c 2a 2a 3e 4c 2a 2a 3e 4d 2a 2a 3e 4d 2a 2a >L**>L**>M**>M**
+Tutor> 
+00300090    3e 4e 2a 2a 3e 4e 2a 2a 3e 4f 2a 2a 3e 4f 2a 2a >N**>N**>O**>O**
+Tutor> 
+003000a0    3e 50 2a 2a 3e 50 2a 2a 3e 51 2a 2a 3e 51 2a 2a >P**>P**>Q**>Q**
+Tutor> 
+003000b0    3e 52 2a 2a 3e 52 2a 2a 3e 53 2a 2a 3e 53 2a 2a >R**>R**>S**>S**
+Tutor> 
+003000c0    3e 54 2a 2a 3e 54 2a 2a 3e 55 2a 2a 3e 55 2a 2a >T**>T**>U**>U**
+Tutor> 
+003000d0    3e 56 2a 2a 3e 56 2a 2a 3e 57 2a 2a 3e 57 2a 2a >V**>V**>W**>W**
+Tutor> 
+003000e0    3e 58 2a 2a 3e 58 2a 2a 3e 59 2a 2a 3e 59 2a 2a >X**>X**>Y**>Y**
+Tutor> 
+003000f0    3e 5a 2a 2a 3e 5a 2a 2a 3e 5b 2a 2a 3e 5b 2a 2a >Z**>Z**>[**>[**
+Tutor> 
+00300100    3e 5c 2a 2a 3e 5c 2a 2a 3e 5d 2a 2a 3e 5d 2a 2a >\**>\**>]**>]**
+Tutor> 
+00300110    3e 5e 2a 2a 3e 5e 2a 2a 3e 5f 2a 2a 3e 5f 2a 2a >^**>^**>_**>_**
+Tutor> 
+00300120    3e 60 2a 2a 3e 60 2a 2a 3e 61 2a 2a 3e 61 2a 2a >`**>`**>a**>a**
+Tutor> 
+00300130    3e 62 2a 2a 3e 62 2a 2a 3e 63 2a 2a 3e 63 2a 2a >b**>b**>c**>c**
+Tutor> 
+00300140    3e 64 2a 2a 3e 64 2a 2a 3e 65 2a 2a 3e 65 2a 2a >d**>d**>e**>e**
+Tutor> 
+00300150    3e 66 2a 2a 3e 66 2a 2a 3e 67 2a 2a 3e 67 2a 2a >f**>f**>g**>g**
+Tutor> 
+00300160    3e 68 2a 2a 3e 68 2a 2a 3c 61 2a 2a 2a 3c 75 2a >h**>h**<a***<u*
+Tutor> 
+00300170    2a 2a 3c 73 2a 2a 2a 3c 74 2a 2a 2a 3c 69 2a 2a **<s***<t***<i**
+Tutor> 
+00300180    2a 3c 6e 2a 2a 2a 3c 67 2a 2a 2a 3c 75 2a 2a 2a *<n***<g***<u***
+Tutor> 
+00300190    3c 69 2a 2a 2a 3c 6e 2a 2a 2a 3e 61 2a 3e 75 2a <i***<n***>a*>u*
+Tutor> 
+003001a0    3e 73 2a 3e 74 2a 3e 69 2a 3e 6e 2a 2a 3e 67 2a >s*>t*>i*>n**>g*
+Tutor> 
+003001b0    2a 3e 75 2a 2a 3e 69 2a 2a 3e 6e 2a 2a 3c 61 2a *>u**>i**>n**<a*
+Tutor> 
+003001c0    2a 2a 3c 75 2a 2a 2a 3c 73 2a 2a 2a 3c 6a 2a 2a **<u***<s***<j**
+Tutor> 
+003001d0    2a 3c 6a 2a 2a 2a 3c 66 2a 2a 2a 3c 6b 2a 2a 2a *<j***<f***<k***
+Tutor> 
+003001e0    3c 6a 2a 2a 2a 3c 64 2a 2a 2a 3c 6b 2a 2a 2a 3e <j***<d***<k***>
+Tutor> 
+003001f0    61 2a 3e 75 2a 3e 73 2a 3e 6a 2a 3e 6a 2a 3e 66 a*>u*>s*>j*>j*>f
+Tutor> 
+00300200    2a 2a 3e 6b 2a 2a 3e 6a 2a 2a 3e 64 2a 2a 3e 6b **>k**>j**>d**>k
+Tutor> 
+00300210    2a 2a 3c 64 2a 3c 6b 2a 3c 64 2a 3c 6a 2a 3c 6e **<d*<k*<d*<j*<n
+Tutor> 
+00300220    2a 3c 64 2a 3c 6a 2a 3c 64 2a 3c 6a 2a 3c 64 2a *<d*<j*<d*<j*<d*
+Tutor> 
+00300230    3c 6e 2a 3c 64 2a 3c 6a 2a 3c 64 2a 3c 6a 2a 3c <n*<d*<j*<d*<j*<
+Tutor> 
+00300240    64 2a 3c 6a 2a 3c 64 2a 3c 6a 2a 3c 64 2a 3e 64 d*<j*<d*<j*<d*>d
+Tutor> 
+00300250    2a 3e 6b 2a 3e 64 2a 3e 6a 2a 3e 6e 2a 3e 64 2a *>k*>d*>j*>n*>d*
+Tutor> 
+00300260    2a 3e 6a 2a 2a 3e 64 2a 2a 3e 6a 2a 2a 3e 64 2a *>j**>d**>j**>d*
+Tutor> 
+00300270    2a 3e 6e 2a 2a 3e 64 2a 2a 3e 6a 2a 2a 3e 64 2a *>n**>d**>j**>d*
+Tutor> 
+00300280    2a 3e 6a 2a 2a 3e 64 2a 2a 3e 6a 2a 2a 3e 64 2a *>j**>d**>j**>d*
+Tutor> 
+00300290    2a 3e 6a 2a 2a 3e 64 2a 00 00 00 00 00 00 00 00 *>j**>d*........
+Tutor> 
+003002a0    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................
+Tutor> 
+003002b0    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................
+Tutor> 
+003002c0    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................
 Tutor> 
 Tutor> 
 Quit handler: 
-killing process 1987 Leaving board #1
+killing process 1919 Leaving board #1
 tuser@tutor-vserver:~$ exit
 exit
 
-Script done on Wed 03 Nov 2021 02:29:34 PM EDT
+Script done on Tue 09 Nov 2021 06:33:33 PM EST
