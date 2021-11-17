@@ -41,7 +41,7 @@ all: tunix.lnx
 IO_OFILES = io.o tty.o ioconf.o queue.o 
 KERNEL_OFILES = startup0.o startup.o tunix.o sysentry.o \
 		asmswtch.o sched.o $(IO_OFILES)
-USER_OFILES =   crt01.o crt02.o crt03.o \
+USER_OFILES = crt01.o crt02.o crt03.o \
 		uprog1.o uprog2.o uprog3.o \
 		ulib.o 
 
