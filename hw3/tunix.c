@@ -5,19 +5,28 @@
 #include <gates.h>
 #include "tsyscall.h"
 #include "tsystm.h"
+#include "proc.h"
+#include "sched.h"
+
+extern void ustart1(void);
+extern void ustart2(void);
+extern void ustart3(void);
 
 extern IntHandler syscall; /* the assembler envelope routine    */
-extern void ustart(void), finale(void);
+extern void finale(void);
 /* kprintf is proto'd in stdio.h, but we don't need that for anything else */
 //void kprintf(char *, ...);	
 
 /* functions in this file */
-void debug_set_trap_gate(int n, IntHandler *inthand_addr, int debug);
-void set_trap_gate(int n, IntHandler *inthand_addr);
+void udebug_set_trap_gate(int n, IntHandler *inthand_addr, int debug);
+void uset_trap_gate(int n, IntHandler *inthand_addr);
 int sysexit(int);
 void k_init(void);
 void shutdown(void);
-void syscallc( int user_eax, int devcode, char *buff , int bufflen);
+void syscallc(int user_eax, int devcode, char *buff , int bufflen);
+
+PEntry proctab[NPROC], *curproc;
+void init_proctab(void);
 
 /* Record debug info in otherwise free memory between program and stack */
 /* 0x300000 = 3M, the start of the last M of user memory on the SAPC */
@@ -41,7 +50,7 @@ void k_init(){
   debug_record = debug_log_area; /* clear debug log */
   cli();
   ioinit();            /* initialize the deivce */ 
-  set_trap_gate(0x80, &syscall);   /* SET THE TRAP GATE*/
+  uset_trap_gate(0x80, &syscall);   /* SET THE TRAP GATE*/
 
   /* Note: Could set these with array initializers */
   /* Need to cast function pointer type to keep ANSI C happy */
@@ -54,7 +63,29 @@ void k_init(){
   sysent[TIOCTL].sy_narg = 3;
   sysent[TWRITE].sy_narg = 3;
   sti();			/* user runs with interrupts on */
-  ustart();
+  init_proctab();
+  schedule();
+}
+
+void init_proctab(void) {
+  proctab[3].p_savedregs[SAVED_ESP] = ESP1;
+  proctab[3].p_savedregs[SAVED_ESP] = ESP2;
+  proctab[3].p_savedregs[SAVED_ESP] = ESP3;
+
+  proctab[1].p_savedregs[SAVED_PC] = (int) &ustart1;
+  proctab[2].p_savedregs[SAVED_PC] = (int) &ustart2;
+  proctab[3].p_savedregs[SAVED_PC] = (int) &ustart3;
+
+  for (int i = 0; i < NPROC; i++) {
+    proctab[i].p_savedregs[SAVED_EFLAGS] = 0x1 << 9;
+    proctab[i].p_savedregs[SAVED_EBP] = 0;  			
+	  proctab[i].p_status = RUN;
+  }
+
+  proctab[1].p_status = BLOCKED;
+  proctab[2].p_status = BLOCKED;
+
+  // curproc = &proctab[0];
 }
 
 /* shut the system down */
@@ -101,24 +132,24 @@ void syscallc( int user_eax, int devcode, char *buff , int bufflen)
 /* sysexit: this function for the exit syscall fuction */
 /****************************************************************************/
 
-int sysexit(int exit_code){ 
-        kprintf("\n EXIT CODE IS %d\n", exit_code);
+int sysexit(int exit_code){
+  kprintf("\n EXIT CODE IS %d\n", exit_code);
 	shutdown();  /* we have only one program here, so all done */
 	return 0;    /* never happens, but keeps gcc happy */
 }
 
 /****************************************************************************/
-/* set_trap_gate: this function for setting the trap gate */
+/* uset_trap_gate: this function for setting the trap gate */
 /****************************************************************************/
 extern void locate_idt(unsigned int *limitp, char ** idtp);
 
-void set_trap_gate(int n, IntHandler *inthand_addr)
+void uset_trap_gate(int n, IntHandler *inthand_addr)
 {
-  debug_set_trap_gate(n, inthand_addr, 0);
+  udebug_set_trap_gate(n, inthand_addr, 0);
 }
 
 /* write the nth idt descriptor as a trap gate to inthand_addr */
-void debug_set_trap_gate(int n, IntHandler *inthand_addr, int debug)
+void udebug_set_trap_gate(int n, IntHandler *inthand_addr, int debug)
 {
   char *idt_addr;
   Gate_descriptor *idt, *desc;
