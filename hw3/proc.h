@@ -10,6 +10,10 @@
 /* number of processes: 3 user processes, 1 proc0 */
 #define  NPROC 4
 
+#define ESP1 0x280000	// process 1 stack address
+#define ESP2 0x290000	// process 2 stack address 
+#define ESP3 0x2a0000	// process 3 stack address 
+
 #define  N_SAVED_REGS 7
 /* 7 non-scratch CPU registers, saved in this order: */
 enum cpu_regs {SAVED_ESP, SAVED_EBX, SAVED_ESI, SAVED_EDI,
