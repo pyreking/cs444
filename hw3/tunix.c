@@ -68,8 +68,8 @@ void k_init(){
 }
 
 void init_proctab(void) {
-  proctab[3].p_savedregs[SAVED_ESP] = ESP1;
-  proctab[3].p_savedregs[SAVED_ESP] = ESP2;
+  proctab[1].p_savedregs[SAVED_ESP] = ESP1;
+  proctab[2].p_savedregs[SAVED_ESP] = ESP2;
   proctab[3].p_savedregs[SAVED_ESP] = ESP3;
 
   proctab[1].p_savedregs[SAVED_PC] = (int) &ustart1;
@@ -82,10 +82,7 @@ void init_proctab(void) {
 	  proctab[i].p_status = RUN;
   }
 
-  proctab[1].p_status = BLOCKED;
-  proctab[2].p_status = BLOCKED;
-
-  // curproc = &proctab[0];
+  curproc = &proctab[1];
 }
 
 /* shut the system down */
@@ -133,6 +130,9 @@ void syscallc( int user_eax, int devcode, char *buff , int bufflen)
 /****************************************************************************/
 
 int sysexit(int exit_code){
+  curproc->p_exitval = exit_code;
+  curproc->p_status = ZOMBIE;
+  schedule();
   kprintf("\n EXIT CODE IS %d\n", exit_code);
 	shutdown();  /* we have only one program here, so all done */
 	return 0;    /* never happens, but keeps gcc happy */
