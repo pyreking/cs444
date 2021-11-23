@@ -17,6 +17,8 @@
 #include "tty_public.h"
 #include "tty.h"
 #include "queue/queue.h"
+#include "sched.h"
+#include "proc.h"
 
 /* define maximum size of queue */
 #define QMAX 6
@@ -135,14 +137,23 @@ int ttywrite(int dev, char *buf, int nchar)
     set_eflags(saved_eflags);
     /* loop till all chars are gotten into queue, spinning as needed */
     while ( i < nchar ) {
-	cli();			/* enqueue is critical code */
-	if (enqueue( &(tty->tbuf), buf[i])!=FULLQUE) {
-	    i++;		/* success, advance one spot */
-//	    kickout(baseport);	/* make sure transmits enabled */
+	    cli();			/* enqueue is critical code */
+
+      while (enqueue( &(tty->tbuf), buf[i++]) == FULLQUE) {
+        if (dev == TTY0) {
+          kprintf("Going to sleep.");
+          sleep(TTY0_OUTPUT);
+        } else {
+          sleep(TTY1_OUTPUT);
+        }
+      }
+
+      //kickout(baseport);	/* make sure transmits enabled */
 	    outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
-	}
-	set_eflags(saved_eflags); /* restore CPU flags */
+    
+	    set_eflags(saved_eflags); /* restore CPU flags */
     }
+
     return nchar;
 }
 
