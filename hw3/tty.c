@@ -131,17 +131,26 @@ int ttywrite(int dev, char *buf, int nchar)
     /* load tx queue some to get started: this doesn't spin */
     while ((i < nchar) && (enqueue( &(tty->tbuf), buf[i])!=FULLQUE))
 	i++;
+
     /* now tell transmitter to interrupt (or restart output) */
     outpt( baseport+UART_IER, UART_IER_RDI | UART_IER_THRI); /* enable both */
+    if (queuecount(&(tty->tbuf)) >= QMAX) {
+        if (dev == TTY0) {
+          sleep(TTY0_OUTPUT);
+        } else {
+          sleep(TTY1_OUTPUT);
+        }
+    }
+
     /* read and write int's */
     set_eflags(saved_eflags);
     /* loop till all chars are gotten into queue, spinning as needed */
     while ( i < nchar ) {
-	    cli();			/* enqueue is critical code */
+	  saved_eflags = get_eflags();
+    cli();			/* disable ints in CPU */
 
-      while (enqueue( &(tty->tbuf), buf[i++]) == FULLQUE) {
+    while (enqueue( &(tty->tbuf), buf[i++]) == FULLQUE) {
         if (dev == TTY0) {
-          kprintf("Going to sleep.");
           sleep(TTY0_OUTPUT);
         } else {
           sleep(TTY1_OUTPUT);
@@ -150,7 +159,6 @@ int ttywrite(int dev, char *buf, int nchar)
 
       //kickout(baseport);	/* make sure transmits enabled */
 	    outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
-    
 	    set_eflags(saved_eflags); /* restore CPU flags */
     }
 
@@ -226,10 +234,15 @@ void irqinthandc(int dev)
           outpt( baseport+UART_TX, dequeue( &tty->ebuf ) ); /* ack tx dev */
         else if (queuecount( &tty->tbuf ))  {
 	    /* if there is char in tbuf Q output it */
-               ch =dequeue(&tty->tbuf);
+               ch = dequeue(&tty->tbuf);
 	       sprintf(log, ">%c", ch);
 	       debug_log(log);
 	       outpt( baseport+UART_TX, ch ) ; /* ack tx dev */
+           if (dev == TTY0) {
+             wakeup(TTY0_OUTPUT);
+           } else {
+             wakeup(TTY1_OUTPUT);
+           }
              }
              else		/* all done transmitting */ 
               outpt( baseport+UART_IER, UART_IER_RDI); /* shut down tx ints */
