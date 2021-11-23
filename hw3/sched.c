@@ -15,7 +15,7 @@ void schedule(void) {
   int saved_eflags;
 
   for (int i = 1; i < NPROC; i++) {
-    if (proctab[i].p_status == RUN) {
+    if (proctab[i].p_status == RUN && &proctab[i] != curproc) {
       saved_eflags = get_eflags();
       cli();
 
@@ -28,7 +28,8 @@ void schedule(void) {
   }
 
 
-  if ((proctab[1].p_status == ZOMBIE) && (proctab[2].p_status == ZOMBIE) && (proctab[3].p_status == ZOMBIE)) {
+  if ((proctab[1].p_status != RUN) && (proctab[2].p_status != RUN) && (proctab[3].p_status != RUN)
+      && curproc != &proctab[0]) {
     saved_eflags = get_eflags();
     cli();
 
@@ -43,14 +44,8 @@ void schedule(void) {
 void sleep(WaitCode event) {
   cli();
 
-  char buf[BUFLEN];
-
   curproc->p_status = BLOCKED;
   curproc->p_waitcode = event;
-  
-  sprintf(buf, "Process %d went to sleep.", curproc - proctab);
-
-  debug_log(buf);
 
   schedule();
 
