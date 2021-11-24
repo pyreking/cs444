@@ -18,7 +18,6 @@
 #include "tty.h"
 #include "queue/queue.h"
 #include "sched.h"
-#include "proc.h"
 
 /* define maximum size of queue */
 #define QMAX 6
@@ -129,38 +128,35 @@ int ttywrite(int dev, char *buf, int nchar)
     saved_eflags = get_eflags();
     cli();			/* disable ints in CPU */
     /* load tx queue some to get started: this doesn't spin */
-    while ((i < nchar) && (enqueue( &(tty->tbuf), buf[i])!=FULLQUE))
-	i++;
+    while ((i < nchar) && (enqueue( &(tty->tbuf), buf[i])!=FULLQUE)) {
+      char qbuf[BUFLEN];
+      sprintf(qbuf, "[%c]", buf[i]);
+      debug_log(qbuf);
+      i++;
+    }
 
     /* now tell transmitter to interrupt (or restart output) */
     outpt( baseport+UART_IER, UART_IER_RDI | UART_IER_THRI); /* enable both */
-    if (queuecount(&(tty->tbuf)) >= QMAX) {
-        if (dev == TTY0) {
-          sleep(TTY0_OUTPUT);
-        } else {
-          sleep(TTY1_OUTPUT);
-        }
-    }
-
     /* read and write int's */
-    set_eflags(saved_eflags);
+    //set_eflags(saved_eflags);
     /* loop till all chars are gotten into queue, spinning as needed */
     while ( i < nchar ) {
-	  saved_eflags = get_eflags();
-    cli();			/* disable ints in CPU */
-
-    while (enqueue( &(tty->tbuf), buf[i++]) == FULLQUE) {
+	    cli();			/* enqueue is critical code */
+	    while (enqueue( &(tty->tbuf), buf[i]) == FULLQUE) {
         if (dev == TTY0) {
           sleep(TTY0_OUTPUT);
         } else {
           sleep(TTY1_OUTPUT);
         }
-      }
-
-      //kickout(baseport);	/* make sure transmits enabled */
-	    outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+	      outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+	    }
+      char qbuf[BUFLEN];
+      sprintf(qbuf, "[%c]", buf[i]);
+      debug_log(qbuf);
+      i++;
 	    set_eflags(saved_eflags); /* restore CPU flags */
     }
+    outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
 
     return nchar;
 }
@@ -234,17 +230,18 @@ void irqinthandc(int dev)
           outpt( baseport+UART_TX, dequeue( &tty->ebuf ) ); /* ack tx dev */
         else if (queuecount( &tty->tbuf ))  {
 	    /* if there is char in tbuf Q output it */
-               ch = dequeue(&tty->tbuf);
+               ch =dequeue(&tty->tbuf);
 	       sprintf(log, ">%c", ch);
 	       debug_log(log);
-	       outpt( baseport+UART_TX, ch ) ; /* ack tx dev */
-           if (dev == TTY0) {
+        
+        if (dev == TTY0) {
              wakeup(TTY0_OUTPUT);
            } else {
              wakeup(TTY1_OUTPUT);
            }
+	       outpt( baseport+UART_TX, ch ) ; /* ack tx dev */
              }
-             else		/* all done transmitting */ 
+             else		/* all done transmitting */
               outpt( baseport+UART_IER, UART_IER_RDI); /* shut down tx ints */
               break;
 
