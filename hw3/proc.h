@@ -34,6 +34,6 @@ typedef struct {
 } PEntry;
 
 /* extern these globals here, define them in tunix.c */
-extern PEntry proctab[], *curproc;
+extern PEntry proctab[], *curproc, *lastproc;
 
 #endif /*PROC_H */
