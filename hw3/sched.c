@@ -11,18 +11,19 @@ void log_process_switch(PEntry *oldproc);
 
 void schedule(void) {
   PEntry *oldproc = curproc;
-
   int saved_eflags;
 
   for (int i = 1; i < NPROC; i++) {
-    if (proctab[i].p_status == RUN && &proctab[i] != curproc) {
+    if (proctab[i].p_status == RUN && &proctab[i] != curproc && &proctab[i] != lastproc) {
       saved_eflags = get_eflags();
       cli();
 
       curproc = &proctab[i];
+      lastproc = oldproc;
+      
       log_process_switch(oldproc);
-      asmswtch(oldproc, curproc);
 
+      asmswtch(oldproc, curproc);
       set_eflags(saved_eflags);
     }
   }
@@ -55,15 +56,15 @@ void sleep(WaitCode event) {
 void wakeup(WaitCode event) {
   int i;
 
-  cli();
-
   for (i = 1; i < NPROC; i++) {
     if (proctab[i].p_waitcode == event && proctab[i].p_status == BLOCKED) {
       proctab[i].p_status = RUN;
+      char bbuf[200];
+      //sprintf(bbuf, "  woke up process %d   ", i);
+      //debug_log(bbuf);
     }
   }
 
-  sti();
 }
 
 void log_process_switch(PEntry *oldproc) {
