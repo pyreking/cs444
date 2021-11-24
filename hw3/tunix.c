@@ -19,7 +19,7 @@ void init_proctab(void);
 void process0(void);
 void delay(void);
 
-PEntry proctab[NPROC], *curproc;
+PEntry proctab[NPROC], *curproc, *lastproc;
 
 extern IntHandler syscall; /* the assembler envelope routine    */
 extern void finale(void);
@@ -91,6 +91,7 @@ void init_proctab() {
 	}
 
 	curproc = &proctab[0];
+  lastproc = curproc;
 }
 
 
@@ -100,10 +101,9 @@ void shutdown()
   kprintf("SHUTTING THE SYSTEM DOWN!\n");
   kprintf("Debug log from run:\n");
   kprintf("Marking kernel events as follows:\n");
-  kprintf("  ^a   COM2 input interrupt, a received\n");
-  kprintf("  ~    COM2 output interrupt, ordinary char output\n");
-  kprintf("  ~e   COM2 output interrupt, echo output\n");
-  kprintf("  ~s   COM2 output interrupt, shutdown TX ints\n");
+  kprintf("   *   TX interrupt occured.\n");
+  kprintf("  [c]  Character put in TX queue.\n");
+  kprintf("  >c   Character output from TX queue.\n");
   kprintf("%s", debug_log_area);	/* the debug log from memory */
   kprintf("\nLEAVE KERNEL!\n\n");
   finale();		/* trap to Tutor */
@@ -142,8 +142,8 @@ int sysexit(int exit_code){
   cli();
   curproc->p_exitval = exit_code;
   curproc->p_status = ZOMBIE;
-  schedule();
   kprintf("\n EXIT CODE IS %d\n", exit_code);
+  schedule();
 	shutdown();  /* we have only one program here, so all done */
 	return 0;    /* never happens, but keeps gcc happy */
 }
@@ -196,6 +196,7 @@ void process0() {
         (proctab[3].p_status == RUN)) {
 	  schedule();
 	}
+  
   delay();      
 	shutdown();
 }
