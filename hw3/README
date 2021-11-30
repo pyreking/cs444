@@ -38,6 +38,3 @@ User-level files:
   	does exit syscall. Entry point ustartX. X = 1, 2, or 3.
    prog1.c, prog2.c, prog2a.c, and prog3.c: the three user level processes.
    proc.h: header file that includes code for the process table.
-
-test1.sh: provided shell script for automatic run, with input
-test1.script: script from run of system, showing debug log output
