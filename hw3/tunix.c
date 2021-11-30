@@ -55,6 +55,9 @@ void syscallc(int user_eax, int devcode, char *buff , int bufflen);
 char *debug_log_area = (char *)DEBUG_AREA;
 char *debug_record;  /* current pointer into log area */ 
 
+/* Keeps track of the number of zombie processes. */
+int num_zombies;
+
 #define MAX_CALL 6
 
 /* optional part: syscall dispatch table */
@@ -117,6 +120,9 @@ void init_proctab() {
 	curproc = &proctab[0];
   /* Set the last process to run to process 0. */
   lastproc = curproc;
+
+  /* Set the number of zombies to 0. */
+  num_zombies = 0;
 }
 
 
@@ -170,6 +176,8 @@ int sysexit(int exit_code){
   curproc->p_exitval = exit_code;
   /* Set the status of the current process to ZOMBIE. */
   curproc->p_status = ZOMBIE;
+  /* Increment the number of zombies. */
+  num_zombies++;
   /* Print out the exit code of the zombie process. */
   kprintf("\n EXIT CODE IS %d\n", exit_code);
   /* Call the scheduler. */
@@ -223,9 +231,8 @@ void debug_log(char *msg)
 
 /* Calls the scheduler if the processes are not zombies and shutdowns the OS afterwards. */
 void process0() {
-  /* Continually call the scheduler until there are no more processes to run. */
-	while ((proctab[1].p_status == RUN) || (proctab[2].p_status == RUN) ||
-        (proctab[3].p_status == RUN)) {
+  /* Continually call the scheduler until all of the processes are zombies. */
+	while (num_zombies < (NPROC - 1)) {
 	  schedule();
 	}
   
