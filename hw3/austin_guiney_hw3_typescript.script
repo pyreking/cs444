@@ -1,0 +1,1299 @@
+Script started on Mon 29 Nov 2021 10:46:07 PM EST
+tuser@tutor-vserver:~$ ls
+eth.txt  [0m[01;34minclude[0m  [01;34mlib[0m  [01;34mtestaout[0m  [01;34mtestelf[0m  testelf.syms  typescript
+tuser@tutor-vserver:~$ ssh aguiney@users.cs.umb.edu
+aguiney@users.cs.umb.edu's password: 
+Welcome to Ubuntu 20.04.3 LTS (GNU/Linux 5.4.0-81-generic x86_64)
+
+  System information as of Mon 29 Nov 2021 10:46:19 PM EST
+
+  System load:  0.01                Temperature:           47.0 C
+  Usage of /:   15.5% of 195.86GB   Processes:             528
+  Memory usage: 4%                  Users logged in:       19
+  Swap usage:   0%                  IPv4 address for eno1: 158.121.104.215
+
+Contact: operator@cs.umb.edu or 617-287-6480
+Last login: Mon Nov 29 22:44:35 2021 from 108.1.153.226
+aguiney@pe15:~$ cd cs444/hw3
+aguiney@pe15:~/cs444/hw3$ ls -al
+total 148
+drwxrwsr-x 3 aguiney cs444-1G 4096 Nov 29 22:43 .
+drwxrws--- 7 aguiney cs444-1G 4096 Nov 18 12:11 ..
+-rw-r--r-- 1 aguiney cs444-1G 1539 Nov 16 19:20 asmswtch.s
+-rw-r--r-- 1 aguiney cs444-1G  586 Nov 29 21:58 crt01.s
+-rw-r--r-- 1 aguiney cs444-1G  585 Nov 29 21:58 crt02.s
+-rw-r--r-- 1 aguiney cs444-1G  585 Nov 29 21:58 crt03.s
+-rw-r--r-- 1 aguiney cs444-1G  473 Nov 22 19:20 crt0.s
+-rw-r--r-- 1 aguiney cs444-1G 1510 Nov 16 19:43 io.c
+-rw-r--r-- 1 aguiney cs444-1G  411 Nov 16 19:43 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G  819 Nov 16 19:43 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G 3054 Nov 22 19:20 makefile
+-rw-r--r-- 1 aguiney cs444-1G 1394 Nov 29 22:04 proc.h
+drwxrwsr-x 2 aguiney cs444-1G 4096 Nov 16 19:20 queue
+-rw-r--r-- 1 aguiney cs444-1G 1758 Nov 29 22:34 README
+-rw-r--r-- 1 aguiney cs444-1G 4261 Nov 29 21:41 sched.c
+-rw-r--r-- 1 aguiney cs444-1G  541 Nov 29 21:41 sched.h
+-rw-r--r-- 1 aguiney cs444-1G  260 Nov 16 19:43 startup0.s
+-rw-r--r-- 1 aguiney cs444-1G  342 Nov 16 19:43 startup.c
+-rw-r--r-- 1 aguiney cs444-1G  627 Nov 16 19:43 sysentry.s
+-rw-r--r-- 1 aguiney cs444-1G 1683 Nov 16 19:43 test1.c
+-rw-r--r-- 1 aguiney cs444-1G  235 Nov 16 19:43 tsyscall.h
+-rw-r--r-- 1 aguiney cs444-1G  583 Nov 16 19:43 tsystm.h
+-rw-r--r-- 1 aguiney cs444-1G 8557 Nov 29 21:39 tty.c
+-rw-r--r-- 1 aguiney cs444-1G  744 Nov 16 19:43 tty.h
+-rw-r--r-- 1 aguiney cs444-1G  415 Nov 16 19:43 tty_public.h
+-rw-r--r-- 1 aguiney cs444-1G  616 Nov 16 19:43 tunistd.h
+-rw-r--r-- 1 aguiney cs444-1G 8307 Nov 29 22:32 tunix.c
+-rw-r--r-- 1 aguiney cs444-1G 1191 Nov 16 19:43 ulib.s
+-rw-r--r-- 1 aguiney cs444-1G  557 Nov 29 21:59 uprog1.c
+-rw-r--r-- 1 aguiney cs444-1G  477 Nov 29 22:00 uprog2a.c
+-rw-r--r-- 1 aguiney cs444-1G  338 Nov 29 22:00 uprog2.c
+-rw-r--r-- 1 aguiney cs444-1G  338 Nov 29 22:01 uprog3.c
+aguiney@pe15:~/cs444/hw3$ cat README
+Author: Austin Guiney
+Date: November 29th, 2021
+typescript file: austin_guiney_hw3_typescript.script.
+
+Instructions:
+run `make clean` to removed the executable files from the directory.
+run `make tunix.lnx` to build the executable file.
+run `mtip -f tunix.lnx` and `~d` on tutor-vserver VM to download the program onto tutor.
+run `go 100100` on tutor to run the program.
+
+Shared between user and kernel:
+
+   tty_public.h: TTY device numbers
+   tsyscall.h: syscall numbers (like UNIX sys/syscall.h)
+
+Kernel files:
+
+   tsystm.h: syscall dispatch, kernel fn protos (like UNIX sys/systm.h)
+   startup0.s: same as $pclibsrc/startup0.s.  Sets up stack, calls
+        into startup1.c
+   startup1.c: Same as $pclibsrc/startup.c, but calls your kernel
+        initialization routine instead of main.
+   tunix.c:  main kernel code: init, system call dispatch, shutdown
+   sysentry.s: system call trap handler assembly envelope.  Calls syscallc.
+   io.h, io.c, ioconf.h, ioconf.c: device-independent io system
+   tty.c, tty.h, tty_public.h:  tty driver from hw1, almost unchanged,
+                                   (now tty.c does some debug_log calls)
+   sched.c: a non-preemptive scheduler for the tunix kernel.
+   sched.h: function prototypes for the scheduler.
+   asmswtch.s: switch CPU context for multitasking.
+
+User-level files:
+
+   tunistd.h: syscall prototypes (like UNIX unistd.h)
+   test1.c:  has main(). User program.
+   ulib.s:  library routines for syscalls: _read, _write, _exit
+   crt01.s, crt02.s, crt03.s:  user-level "C startup module"  calls mainX,
+  	does exit syscall. Entry point ustartX. X = 1, 2, or 3.
+   prog1.c, prog2.c, prog2a.c, and prog3.c: the three user level processes.
+   proc.h: header file that includes code for the process table.aguiney@pe15:~/cs444/hw3$ cat proc.h
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       Date:        11/29/2021
+*       file:        proc.h
+*       
+*       Process structure info.
+*
+*/
+#ifndef PROC_H
+#define PROC_H
+
+/* number of processes: 3 user processes, 1 proc0 */
+#define NPROC 4
+
+/* Process 1 stack address */
+#define ESP1 0x280000
+/* Process 2 stack address */
+#define ESP2 0x290000
+/* Process 3 stack address */
+#define ESP3 0x2a0000
+
+#define  N_SAVED_REGS 7
+/* 7 non-scratch CPU registers, saved in this order: */
+enum cpu_regs {SAVED_ESP, SAVED_EBX, SAVED_ESI, SAVED_EDI,
+	       SAVED_EBP, SAVED_EFLAGS, SAVED_PC};
+
+/* for p_status ( RUN=1, BLOCKED=2, ZOMBIE=3) */
+typedef enum proc_status {RUN = 1, BLOCKED, ZOMBIE} ProcStatus;
+
+/* for p_waitcode, what the process is waiting for */
+typedef enum proc_wait {TTY0_OUTPUT = 1, TTY1_OUTPUT} WaitCode;
+
+/* Process Entry */
+typedef struct {
+   int p_savedregs[N_SAVED_REGS]; /* saved non-scratch registers */
+   ProcStatus p_status;   /* RUN, BLOCKED, or ZOMBIE */
+   WaitCode p_waitcode;   /* valid only if status==BLOCKED: TTY0_OUT, etc. */
+   int p_exitval;         /* valid only if status==ZOMBIE */
+} PEntry;
+
+/* extern these globals here, define them in tunix.c
+ * lastproc keeps track of the last process that was run. */
+extern PEntry proctab[], *curproc, *lastproc;
+
+#endif /*PROC_H */
+aguiney@pe15:~/cs444/hw3$ cat tsystm.h
+/*********************************************************************
+*
+*       file:           tsystm.h
+*       author:         betty o'neil
+*
+*       kernel header for internal prototypes
+*
+*/
+
+#ifndef TSYSTM_H
+#define TSYSTM_H
+
+/* initialize io package*/
+void ioinit(void);
+/* read nchar bytes into buf from dev */
+int sysread(int dev, char *buf, int nchar);
+/* write nchar bytes from buf to dev */
+int syswrite(int dev, char *buf, int nchar);
+/* misc. device functions */
+int syscontrol(int dev, int fncode, int val);
+
+/* debugging support */
+void debug_log(char *msg);
+
+#endif
+aguiney@pe15:~/cs444/hw3$ cat tunix.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           tunix.c
+*       date:           11/29/2021
+*
+*       Core kernel code.
+*
+*/
+
+#include <cpu.h>
+#include <gates.h>
+#include "tsyscall.h"
+#include "tsystm.h"
+#include "proc.h"
+#include "sched.h"
+#include <string.h>
+
+/* Symbolic constants for the delay function. */
+#define MILLION 1000000
+#define DELAY (400 * MILLION)
+
+/* Main method for process 1. */
+extern void ustart1(void);
+/* Main method for process 2. */
+extern void ustart2(void);
+/* Main method for process 3. */
+extern void ustart3(void);
+
+/* Initializes the process table. */
+void init_proctab(void);
+/* Calls the scheduler if the processes are not zombies and shutdowns the OS afterwards. */
+void process0(void);
+/* Small delay used for draining output from the TX queue. */
+void delay(void);
+
+/* Initializes the process table variables defined in proc.h. */
+PEntry proctab[NPROC], *curproc, *lastproc;
+
+extern IntHandler syscall; /* the assembler envelope routine    */
+extern void finale(void);
+/* kprintf is proto'd in stdio.h, but we don't need that for anything else */
+void kprintf(char *, ...);	
+
+/* functions in this file */
+void udebug_set_trap_gate(int n, IntHandler *inthand_addr, int debug);
+void uset_trap_gate(int n, IntHandler *inthand_addr);
+int sysexit(int);
+void k_init(void);
+void shutdown(void);
+void syscallc(int user_eax, int devcode, char *buff , int bufflen);
+
+/* Record debug info in otherwise free memory between program and stack */
+/* 0x300000 = 3M, the start of the last M of user memory on the SAPC */
+#define DEBUG_AREA 0x300000
+char *debug_log_area = (char *)DEBUG_AREA;
+char *debug_record;  /* current pointer into log area */ 
+
+/* Keeps track of the number of zombie processes. */
+int num_zombies;
+
+#define MAX_CALL 6
+
+/* optional part: syscall dispatch table */
+static  struct sysent {
+       short   sy_narg;        /* total number of arguments */
+       int     (*sy_call)(int, ...);   /* handler */
+} sysent[MAX_CALL];
+
+/****************************************************************************/
+/* k_init: this function for the initialize  of the kernel system*/
+/****************************************************************************/
+
+void k_init(){
+  debug_record = debug_log_area; /* clear debug log */
+  cli();
+  ioinit();            /* initialize the deivce */ 
+  uset_trap_gate(0x80, &syscall);   /* SET THE TRAP GATE*/
+
+  /* Note: Could set these with array initializers */
+  /* Need to cast function pointer type to keep ANSI C happy */
+  sysent[TREAD].sy_call = (int (*)(int, ...))sysread;
+  sysent[TWRITE].sy_call = (int (*)(int, ...))syswrite;
+  sysent[TEXIT].sy_call = (int (*)(int, ...))sysexit;
+ 
+  sysent[TEXIT].sy_narg = 1;    /* set the arg number of function */
+  sysent[TREAD].sy_narg = 3;
+  sysent[TIOCTL].sy_narg = 3;
+  sysent[TWRITE].sy_narg = 3;
+	sti(); /* user runs with interrupts on */
+  /* Initializes the process table. */
+	init_proctab();
+  /* Call process 0. */
+	process0();
+}
+
+
+/* Initializes the process table. */
+void init_proctab() {
+	int i;
+
+  /* Set the SAVED_PC values for the three user processes. */
+	proctab[1].p_savedregs[SAVED_PC] = (int) &ustart1;
+	proctab[2].p_savedregs[SAVED_PC] = (int) &ustart2;
+	proctab[3].p_savedregs[SAVED_PC] = (int) &ustart3;
+
+  /* Set the SAVED_ESP values for the three user processes. */
+	proctab[1].p_savedregs[SAVED_ESP] = ESP1;
+	proctab[2].p_savedregs[SAVED_ESP] = ESP2;
+	proctab[3].p_savedregs[SAVED_ESP] = ESP3;
+
+  /* Set the SAVED_EFLAGS, SAVED_ESP and status values for process 0 and the
+   * three user processes. */
+	for (i = 0; i < NPROC; i++) {
+		proctab[i].p_savedregs[SAVED_EFLAGS] = 0x1 << 9;
+    proctab[i].p_savedregs[SAVED_EBP] = 0;
+		proctab[i].p_status = RUN;
+	}
+
+  /* Set the current process to process 0. */
+	curproc = &proctab[0];
+  /* Set the last process to run to process 0. */
+  lastproc = curproc;
+
+  /* Set the number of zombies to 0. */
+  num_zombies = 0;
+}
+
+
+/* shut the system down */
+void shutdown()
+{
+  kprintf("SHUTTING THE SYSTEM DOWN!\n");
+  kprintf("Debug log from run:\n");
+  kprintf("Marking kernel events as follows:\n");
+  kprintf("   *   TX interrupt occured.\n");
+  kprintf("  [c]  Character put in TX queue.\n");
+  kprintf("  >c   Character output from TX queue.\n");
+  kprintf("%s", debug_log_area);	/* the debug log from memory */
+  kprintf("\nLEAVE KERNEL!\n\n");
+  finale();		/* trap to Tutor */
+}
+
+/****************************************************************************/
+/* syscallc: this function for the C part of the 0x80 trap handler          */
+/* OK to just switch on the system call number here                         */
+/* By putting the return value of syswrite, etc. in user_eax, it gets       */
+/* popped back in sysentry.s and returned to user in eax                    */
+/****************************************************************************/
+
+void syscallc( int user_eax, int devcode, char *buff , int bufflen)
+{
+  int nargs;
+  int syscall_no = user_eax;
+
+  switch(nargs = sysent[syscall_no].sy_narg)
+    {
+    case 1:         /* 1-argument system call */
+	user_eax = sysent[syscall_no].sy_call(devcode);   /* sysexit */
+	break;
+    case 3:         /* 3-arg system call: calls sysread or syswrite */
+	user_eax = sysent[syscall_no].sy_call(devcode,buff,bufflen); 
+	break;
+    default: kprintf("bad # syscall args %d, syscall #%d\n",
+		     nargs, syscall_no);
+    }
+} 
+
+/****************************************************************************/
+/* sysexit: this function for the exit syscall fuction */
+/****************************************************************************/
+
+int sysexit(int exit_code){
+  /* Disable interrupts because of critical region. */
+  cli();
+  /* Update the exit value of the zombie process. */
+  curproc->p_exitval = exit_code;
+  /* Set the status of the current process to ZOMBIE. */
+  curproc->p_status = ZOMBIE;
+  /* Increment the number of zombies. */
+  num_zombies++;
+  /* Print out the exit code of the zombie process. */
+  kprintf("\n EXIT CODE IS %d\n", exit_code);
+  /* Call the scheduler. */
+  schedule();
+	shutdown();  /* we have only one program here, so all done */
+	return 0;    /* never happens, but keeps gcc happy */
+}
+
+/****************************************************************************/
+/* uset_trap_gate: this function for setting the trap gate */
+/****************************************************************************/
+extern void locate_idt(unsigned int *limitp, char ** idtp);
+
+void uset_trap_gate(int n, IntHandler *inthand_addr)
+{
+  udebug_set_trap_gate(n, inthand_addr, 0);
+}
+
+/* write the nth idt descriptor as a trap gate to inthand_addr */
+void udebug_set_trap_gate(int n, IntHandler *inthand_addr, int debug)
+{
+  char *idt_addr;
+  Gate_descriptor *idt, *desc;
+  unsigned int limit = 0;
+
+  if (debug)
+    kprintf("Calling locate_idt to do sidt instruction...\n");
+  locate_idt(&limit,&idt_addr);
+  /* convert to CS seg offset, i.e., ordinary address, then to typed pointer */
+  idt = (Gate_descriptor *)(idt_addr - KERNEL_BASE_LA);
+  if (debug)
+    kprintf("Found idt at %x, lim %x\n",idt, limit);
+  desc = &idt[n];               /* select nth descriptor in idt table */
+  /* fill in descriptor */
+  if (debug)
+    kprintf("Filling in desc at %x with addr %x\n",(unsigned int)desc,
+           (unsigned int)inthand_addr);
+  desc->selector = KERNEL_CS;   /* CS seg selector for int. handler */
+  desc->addr_hi = ((unsigned int)inthand_addr)>>16; /* CS seg offset of inthand */
+  desc->addr_lo = ((unsigned int)inthand_addr)&0xffff;
+  desc->flags = GATE_P|GATE_DPL_KERNEL|GATE_TRAPGATE; /* valid, trap */
+  desc->zero = 0;
+}
+
+/* append msg to memory log */
+void debug_log(char *msg)
+{
+    strcpy(debug_record, msg);
+    debug_record +=strlen(msg);
+}
+
+/* Calls the scheduler if the processes are not zombies and shutdowns the OS afterwards. */
+void process0() {
+  /* Continually call the scheduler until all of the processes are zombies. */
+	while (num_zombies < (NPROC - 1)) {
+	  schedule();
+	}
+  
+  /* Drain the output from the TX queue. */
+  delay();
+  /* Shutdown the OS. */
+	shutdown();
+}
+
+/* Small delay used for draining output from the TX queue. */
+void delay() {
+  int i;
+
+  for (i = 0; i < DELAY; i++) {
+  
+  }
+}aguiney@pe15:~/cs444/hw3$ cat sched.c
+/*********************************************************************
+*       file:           sched.c
+*       author:         Austin Guiney
+*       date:           11/29/2021
+*
+*       A non-preemptive scheduler for the tunix kernel.
+*
+*/
+
+#include <stdio.h>
+#include "sched.h"
+#include "proc.h"
+#include <cpu.h>
+/* The length of the buffer used in log_process_switch. */
+#define BUFLEN 200
+
+/* Switches currently running process from oldproc to curproc */
+extern void asmswtch(PEntry *oldproc, PEntry *curproc);
+extern void debug_log(char * msg);
+/* Saves a history of every process switch in the debug log. */
+void log_process_switch(PEntry *oldproc);
+
+/* Schedules processes in numerical order using a non-preemptive scheduler. */
+void schedule(void) {
+  /* Save the current process to oldproc. */
+  PEntry *oldproc = curproc;
+  int saved_eflags;
+
+  /* Loop through every process. */
+  for (int i = 1; i < NPROC; i++) {
+    /* Run the process if the process is availible to run. Only run processes that are not
+     * the current process and were not the last process to run successfully. */
+    if (proctab[i].p_status == RUN && &proctab[i] != curproc && &proctab[i] != lastproc) {
+      /* Save the eflags of the currently running process. */
+      saved_eflags = get_eflags();
+      /* Disable interrupts because of critical region. */
+      cli();
+
+      /* Update the current process. */
+      curproc = &proctab[i];
+      /* Update the variable that tracks the last process that was run. */
+      lastproc = oldproc;
+      
+      /* Saves a log of the process switch in the debug log. */
+      log_process_switch(oldproc);
+
+      /* Switch from the old process to the new process. */
+      asmswtch(oldproc, curproc);
+
+      /* Enable interrupts by restoring the eflags register. */
+      set_eflags(saved_eflags);
+    }
+  }
+
+  /* If there are no more availible processes to run, run process 0 if it is not already running. */
+  if ((proctab[1].p_status != RUN) && (proctab[2].p_status != RUN) && (proctab[3].p_status != RUN)
+      && curproc != &proctab[0]) {
+    /* Save the eflags of the currently running process. */
+    saved_eflags = get_eflags();
+    /* Disable interrupts because of critical region. */
+    cli();
+
+    /* Update the current process. */
+    curproc = &proctab[0];
+
+    /* Saves a log of the process switch in the debug log. */
+    log_process_switch(oldproc);
+
+    /* Switch from the old process to the new process. */
+    asmswtch(oldproc, curproc);
+    
+    /* Enable interrupts by restoring the eflags register. */
+    set_eflags(saved_eflags);
+  }
+}
+
+/* Blocks the current process */
+void sleep(WaitCode event) {
+  /* Disable interrupts because of critical region. */
+  cli();
+
+  /* Update the status of the current process to BLOCKED. */
+  curproc->p_status = BLOCKED;
+  /* Update the waitcode for the current process. */
+  curproc->p_waitcode = event;
+
+  schedule();
+
+  /* Enable interrupts again. */
+  sti();
+}
+
+/* Wakeup every blocked process that has the specified waitcode. */
+void wakeup(WaitCode event) {
+  int i;
+
+  /* Loop through every process in the process table. */
+  for (i = 1; i < NPROC; i++) {
+    /* If the process has the same waitcode and is blocked, unblock it by setting
+     * its status to RUN. */
+    if (proctab[i].p_waitcode == event && proctab[i].p_status == BLOCKED) {
+      proctab[i].p_status = RUN;
+    }
+  }
+
+}
+
+/* Saves a history of every process switch in the debug log. */
+void log_process_switch(PEntry *oldproc) {
+  /* The buffer for the log of the process switch. */
+  char buf[BUFLEN];
+
+  /* Check the status of the last process to run */
+  switch (oldproc->p_status) {
+    /* Log the process switch if it is a ZOMBIE. */
+    case ZOMBIE:
+      sprintf(buf, "|(%dz-%d)", oldproc - proctab, curproc - proctab);
+      break;
+    /* Log the process switch if it is BLOCKED. */
+    case BLOCKED:
+      sprintf(buf, "|(%db-%d)", oldproc - proctab, curproc - proctab);
+      break;
+    /* Log the process switch if it is not a ZOMBIE or BLOCKED. */
+    default:
+      sprintf(buf, "|(%d-%d)", oldproc - proctab, curproc - proctab);
+      break;
+  }
+
+  /* Put the log of the process switch in the debug log if the buffer is nonempty. */
+  if (strlen(buf) > 0) {
+      debug_log(buf);
+  }
+}aguiney@pe15:~/cs444/hw3$ cat sched.h
+/*********************************************************************
+*       file:           sched.h
+*       author:         Austin Guiney
+*       date:           11/29/2021
+*
+*       Function prototypes for sched.c.
+*
+*/
+
+#ifndef SCHED_H
+#define SCHED_H
+#include "proc.h"
+
+/* Schedules processes in numerical order using a non-preemptive scheduler. */
+void schedule(void);
+/* Blocks the current process */
+void sleep(WaitCode event);
+/* Wakeup every blocked process that has the specified waitcode. */
+void wakeup(WaitCode event);
+
+#endifaguiney@pe15:~/cs444/hw3$ cat tty.c
+/*********************************************************************
+*       Modified by Austin Guiney for the CS444 class.
+*       file:           tty.c
+*       author:         betty o'neil
+*                       Ray Zhang
+*
+*       tty driver--device-specific routines for ttys 
+*
+*       Implement the alternative approach of using the IIR 
+*       acknowledgement method.
+*/
+#include <stdio.h>  /* for kprintf prototype */
+#include <serial.h>
+#include <cpu.h>
+#include <pic.h>
+#include "ioconf.h"
+#include "tty_public.h"
+#include "tty.h"
+#include "queue/queue.h"
+#include "sched.h"
+
+/* define maximum size of queue */
+#define QMAX 6
+#define BUFLEN 20
+#define DEBUG_AREA 0x300000
+
+
+//char *debug_log_area = (char *) DEBUG_AREA;
+//char *debug_record;
+//extern int kprintf(char* fmt, ...);
+/* tell C about the assembler shell routines */
+extern void irq3inthand(void), irq4inthand(void); 
+/* C interrupt handlers called from assembler routines */
+void irq4inthandc(void);
+void irq3inthandc(void);
+/* common code for interrupt handlers */
+void irqinthandc(int);
+
+
+extern void debug_log(char *);
+struct tty ttytab[NTTYS];        /* software params/data for each SLU dev */
+
+/*====================================================================
+*
+*       tty specific initialization routine for COM devices
+*/
+
+void ttyinit(int dev)
+{
+    int baseport;
+    struct tty *tty;		/* ptr to tty software params/data block */
+    //debug_record =debug_log_area;
+
+    baseport = devtab[dev].dvbaseport; /* pick up hardware addr */
+    tty = (struct tty *)devtab[dev].dvdata; /* and software params struct */
+
+    if (baseport == COM1_BASE) {
+	/* arm interrupts by installing int vec */
+	set_intr_gate(COM1_IRQ+IRQ_TO_INT_N_SHIFT, &irq4inthand);
+	/* commanding PIC to interrupt CPU for irq 4 (COM1_IRQ) */
+	pic_enable_irq(COM1_IRQ);
+
+    } else if (baseport == COM2_BASE) {
+	/* arm interrupts by installing int vec */
+	set_intr_gate(COM2_IRQ+IRQ_TO_INT_N_SHIFT, &irq3inthand);
+	/* commanding PIC to interrupt CPU for irq 3 (COM2_IRQ) */
+	pic_enable_irq(COM2_IRQ);
+    } else {
+	kprintf("ttyinit: Bad TTY device table entry, dev %d\n", dev);
+	return;			/* give up */
+    }
+  //  tty->echoflag = 1;		/* default to echoing */
+
+    init_queue( &(tty->tbuf), QMAX ); /* init tbuf Q */
+    init_queue( &(tty->ebuf), QMAX ); /* init ebuf Q */
+    init_queue( &(tty->rbuf), QMAX ); /* init rbuf Q */
+
+    /* enable interrupts on receiver now, leave them on, but
+       wait until output shows up to enable transmitter interrupts. */
+    outpt(baseport+UART_IER, UART_IER_RDI); /* RDI = receiver data int */
+}
+
+
+/*====================================================================
+*
+*       tty-specific read routine for TTY devices
+*
+*/
+
+int ttyread(int dev, char *buf, int nchar)
+{
+    //int baseport;
+    struct tty *tty;
+    int i = 0;
+    int saved_eflags;		/* old cpu control/status reg, so can restore it */
+
+    //baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
+    tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
+
+    while (i < nchar) { /* loop until we get user-specified # of chars */
+	saved_eflags = get_eflags();
+	cli();			/* disable ints in CPU */
+				/* for queuecount, dequeue calls */
+	if (queuecount( &(tty->rbuf) )) /* if there is something in rbuf */
+	    buf[i++] = dequeue(&(tty->rbuf)); /* copy from rbuf Q to user buf */
+	set_eflags(saved_eflags);     /* back to previous CPU int. status */
+    }
+    return nchar; 
+}
+
+
+/*====================================================================
+*
+*       tty-specific write routine for SAPC devices
+*       
+*/
+
+int ttywrite(int dev, char *buf, int nchar)
+{
+    int baseport;
+    struct tty *tty;
+    int i = 0;
+    int saved_eflags;
+
+    baseport = devtab[dev].dvbaseport; /* hardware addr from devtab */
+    tty = (struct tty *)devtab[dev].dvdata;   /* software data for line */
+
+    saved_eflags = get_eflags();
+    cli();			/* disable ints in CPU */
+    /* load tx queue some to get started: this doesn't spin */
+    while ((i < nchar) && (enqueue( &(tty->tbuf), buf[i])!=FULLQUE)) {
+      char qbuf[BUFLEN];
+      sprintf(qbuf, "[%c]", buf[i]);
+      debug_log(qbuf);
+      i++;
+    }
+
+    /* now tell transmitter to interrupt (or restart output) */
+    outpt( baseport+UART_IER, UART_IER_RDI | UART_IER_THRI); /* enable both */
+
+    /* loop till all chars are gotten into queue, spinning as needed */
+    while ( i < nchar ) {
+	    cli();			/* enqueue is critical code */
+
+      /* If the TX queue is full, block the current process. */
+	    while (enqueue( &(tty->tbuf), buf[i]) == FULLQUE) {
+        /* Find out if the COM port is TTY0 or TTY1. */
+        if (dev == TTY0) {
+          /* Block the current process. */
+          sleep(TTY0_OUTPUT);
+        } else {
+          /* Block the current process. */
+          sleep(TTY1_OUTPUT);
+        }
+        /* Enable interrupts for RDI and THRI. */
+	      outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+	    }
+      /* The char buffer used for the debug log. */
+      char qbuf[BUFLEN];
+      /* Log the character that was put into the queue. */
+      sprintf(qbuf, "[%c]", buf[i]);
+      /* Update the debug log. */
+      debug_log(qbuf);
+      /* Increment the buffer counter. */
+      i++;
+	    set_eflags(saved_eflags); /* restore CPU flags */
+    }
+    /* Enable interrupts for RDI and THRI. */
+    outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+
+    /* Return the number of characters written. */
+    return nchar;
+}
+
+
+/*====================================================================
+*
+*       tty-specific control routine for TTY devices
+*
+*/
+
+int ttycontrol(int dev, int fncode, int val)
+{
+    struct tty *this_tty = (struct tty *)(devtab[dev].dvdata);
+
+    if (fncode == ECHOCONTROL)
+	this_tty->echoflag = val;
+    else return -1;
+    return 0;
+}
+
+/*====================================================================
+*
+*       tty-specific interrupt routines for COM ports
+*       Best to use a function for common code--
+*/
+
+void irq4inthandc()
+{
+    irqinthandc(TTY0);
+}                              
+  
+void irq3inthandc()
+{
+    irqinthandc(TTY1);
+}                              
+                                  
+/* Traditional UART treatment: check the devices' ready status
+   on int, shutdown tx ints if nothing more to write.
+   Note: never looks at IIR, is fairly generic */
+
+void irqinthandc(int dev)
+{
+    int ch, lsr;
+    char log[BUFLEN];
+   
+   struct tty *tty = (struct tty *)(devtab[dev].dvdata);
+    int baseport = devtab[dev].dvbaseport; /* hardware i/o port */;
+    pic_end_int();           /* notify PIC that its part is done */
+    debug_log("*");
+
+    lsr=inpt(baseport + UART_IIR);
+    switch( lsr = lsr & UART_IIR_ID)
+    {
+      case UART_IIR_RDI: 
+       ch = inpt(baseport+UART_RX); /*read char, ack the device */
+       enqueue( &tty->rbuf, ch ); /* save char in read Q (if fits in Q) */
+       sprintf(log,"<%c", ch);
+       debug_log(log);
+       
+       if (tty->echoflag){	/* if echoing wanted */
+        enqueue(&tty->ebuf,ch); /* echo char (if fits in Q) */
+        if (queuecount( &tty->ebuf )==1)  /* if first char...*/
+		/* enable transmit interrupts also */      
+          outpt( baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
+       }
+       break;
+           
+      case UART_IIR_THRI:
+        if (queuecount( &tty->ebuf ))/* if there is char in echo Q output it*/
+          outpt( baseport+UART_TX, dequeue( &tty->ebuf ) ); /* ack tx dev */
+        else if (queuecount( &tty->tbuf ))  {
+	    /* if there is char in tbuf Q output it */
+               ch =dequeue(&tty->tbuf);
+         /* Log the character that was removed from the queue. */
+	       sprintf(log, ">%c", ch);
+         /* Update the debug log. */
+	       debug_log(log);
+        /* Find out if the COM port is TTY0 or TTY1. */
+          if (dev == TTY0) {
+            /* Wake up every process since the TX queue has room now. */
+            wakeup(TTY0_OUTPUT);
+          } else {
+            /* Wake up every process since the TX queue has room now. */
+            wakeup(TTY1_OUTPUT);
+          }
+	       outpt( baseport+UART_TX, ch ) ; /* ack tx dev */
+             }
+             else		/* all done transmitting */
+              outpt( baseport+UART_IER, UART_IER_RDI); /* shut down tx ints */
+              break;
+
+        default:
+	      sprintf(log, "@%c",lsr +0x30); /* print out error: @1 to @7 except @2 or @4 */
+	      debug_log(log);
+	      } 
+}
+
+/*void debug_log(char*msg)
+{
+   strcpy(debug_record, msg);
+   debug_record  +=strlen(msg);
+   }
+*/aguiney@pe15:~/cs444/hw3$ cat crt01.s
+/*********************************************************************
+*       file:           crt01.s
+*       author:         Austin Guiney
+*       date:           11/29/2021
+*
+*       Starts process 1 and then exits.
+*
+*/
+
+.globl ustart1, main1, exit
+.text
+			
+ustart1:	
+        movl $0x280000, %esp         # reinit the stack
+		movl $0, %ebp                # and frame pointer
+		call main1                   # call main in the uprog.c
+        pushl %eax                   # push the retval=exit_code on stack
+        call exit                    # call sysycall exit
+               
+aguiney@pe15:~/cs444/hw3$ cat crt02.s
+/*********************************************************************
+*       file:           crt02.s
+*       author:         Austin Guiney
+*       date:           11/29/2021
+*
+*       Starts process 2 and then exits.
+*
+*/
+
+.globl ustart2, main2, exit
+.text
+			
+ustart2:	
+        movl $0x290000, %esp         # reinit the stack
+		movl $0, %ebp                # and frame pointer
+		call main2                   # call main in the uprog.c
+        pushl %eax                   # push the retval=exit_code on stack
+        call exit                    # call sysycall exit
+               aguiney@pe15:~/cs444/hw3$ cat crt03.s
+/*********************************************************************
+*       file:           crt01.s
+*       author:         Austin Guiney
+*       date:           11/29/2021
+*
+*       Starts process 3 and then exits.
+*
+*/
+
+.globl ustart3, main3, exit
+.text
+			
+ustart3:	
+        movl $0x2a0000, %esp         # reinit the stack
+		movl $0, %ebp                # and frame pointer
+		call main3                   # call main in the uprog.c
+        pushl %eax                   # push the retval=exit_code on stack
+        call exit                    # call sysycall exit
+               aguiney@pe15:~/cs444/hw3$ cat uprog1.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           uprog1.c
+*       date:           11/29/2021
+*
+*       Main method for process 1.
+*
+*/
+
+#include "tunistd.h"
+#include "tty_public.h"
+
+#define MILLION 1000000
+#define DELAY (400 * MILLION)
+
+int main1()
+{
+  int i;
+
+  write(TTY1,"aaaaaaaaaa",10);
+  write(TTY1, "zzz", 3);
+  for (i=0;i<DELAY;i++)	/* enough time to drain output q */
+    ;
+  write(TTY1,"AAAAAAAAAA",10);	/* see it start output again */
+  return 2;
+}
+aguiney@pe15:~/cs444/hw3$ cat uprog2.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           uprog2.c
+*       date:           11/29/2021
+*
+*       Main method for process 2.
+*
+*/
+
+#include "tunistd.h"
+#include "tty_public.h"
+
+int main2()
+{
+  write(TTY1,"bbbbbbbbbb",10);
+  return 4;
+}
+aguiney@pe15:~/cs444/hw3$ cat uprog2a.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           uprog2.c
+*       date:           11/29/2021
+*
+*       An alternative to uprog2 that dribbles out output
+*
+*/
+
+#include "tunistd.h"
+#include "tty_public.h"
+
+#define MILLION 1000000
+#define SDELAY (8 * MILLION)
+
+int main2a()
+{
+  int i,j;
+  for (j=0;j<10;j++){
+    for(i=0; i< SDELAY; i++)
+	;
+    write(TTY1,"b",1);
+  }
+  return 4;
+}
+aguiney@pe15:~/cs444/hw3$ cat uprog3.c
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           uprog3.c
+*       date:           11/29/2021
+*
+*       Main method for process 3.
+*
+*/
+
+#include "tunistd.h"
+#include "tty_public.h"
+
+int main3()
+{
+  write(TTY1,"cccccccccc",10);
+  return 6;
+}
+aguiney@pe15:~/cs444/hw3$ make clean
+rm -f *.o core
+aguiney@pe15:~/cs444/hw3$ ls -al
+total 148
+drwxrwsr-x 3 aguiney cs444-1G 4096 Nov 29 22:43 .
+drwxrws--- 7 aguiney cs444-1G 4096 Nov 18 12:11 ..
+-rw-r--r-- 1 aguiney cs444-1G 1539 Nov 16 19:20 asmswtch.s
+-rw-r--r-- 1 aguiney cs444-1G  586 Nov 29 21:58 crt01.s
+-rw-r--r-- 1 aguiney cs444-1G  585 Nov 29 21:58 crt02.s
+-rw-r--r-- 1 aguiney cs444-1G  585 Nov 29 21:58 crt03.s
+-rw-r--r-- 1 aguiney cs444-1G  473 Nov 22 19:20 crt0.s
+-rw-r--r-- 1 aguiney cs444-1G 1510 Nov 16 19:43 io.c
+-rw-r--r-- 1 aguiney cs444-1G  411 Nov 16 19:43 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G  819 Nov 16 19:43 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G 3054 Nov 22 19:20 makefile
+-rw-r--r-- 1 aguiney cs444-1G 1394 Nov 29 22:04 proc.h
+drwxrwsr-x 2 aguiney cs444-1G 4096 Nov 16 19:20 queue
+-rw-r--r-- 1 aguiney cs444-1G 1758 Nov 29 22:34 README
+-rw-r--r-- 1 aguiney cs444-1G 4261 Nov 29 21:41 sched.c
+-rw-r--r-- 1 aguiney cs444-1G  541 Nov 29 21:41 sched.h
+-rw-r--r-- 1 aguiney cs444-1G  260 Nov 16 19:43 startup0.s
+-rw-r--r-- 1 aguiney cs444-1G  342 Nov 16 19:43 startup.c
+-rw-r--r-- 1 aguiney cs444-1G  627 Nov 16 19:43 sysentry.s
+-rw-r--r-- 1 aguiney cs444-1G 1683 Nov 16 19:43 test1.c
+-rw-r--r-- 1 aguiney cs444-1G  235 Nov 16 19:43 tsyscall.h
+-rw-r--r-- 1 aguiney cs444-1G  583 Nov 16 19:43 tsystm.h
+-rw-r--r-- 1 aguiney cs444-1G 8557 Nov 29 21:39 tty.c
+-rw-r--r-- 1 aguiney cs444-1G  744 Nov 16 19:43 tty.h
+-rw-r--r-- 1 aguiney cs444-1G  415 Nov 16 19:43 tty_public.h
+-rw-r--r-- 1 aguiney cs444-1G  616 Nov 16 19:43 tunistd.h
+-rw-r--r-- 1 aguiney cs444-1G 8307 Nov 29 22:32 tunix.c
+-rw-r--r-- 1 aguiney cs444-1G 1191 Nov 16 19:43 ulib.s
+-rw-r--r-- 1 aguiney cs444-1G  557 Nov 29 21:59 uprog1.c
+-rw-r--r-- 1 aguiney cs444-1G  477 Nov 29 22:00 uprog2a.c
+-rw-r--r-- 1 aguiney cs444-1G  338 Nov 29 22:00 uprog2.c
+-rw-r--r-- 1 aguiney cs444-1G  338 Nov 29 22:01 uprog3.c
+aguiney@pe15:~/cs444/hw3$ make tunix.lnx
+as --32 -c -o startup0.o startup0.s
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o startup.o startup.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o tunix.o tunix.c
+as --32 -c -o sysentry.o sysentry.s
+as --32 -c -o asmswtch.o asmswtch.s
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o sched.o sched.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o io.o io.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o tty.o tty.c
+[01m[Ktty.c:[m[K In function ‘[01m[Kirqinthandc[m[K’:
+[01m[Ktty.c:259:14:[m[K [01;35m[Kwarning: [m[Kthis ‘[01m[Kelse[m[K’ clause does not guard... [[01;35m[K-Wmisleading-indentation[m[K]
+  259 |              [01;35m[Kelse[m[K  /* all done transmitting */
+      |              [01;35m[K^~~~[m[K
+[01m[Ktty.c:261:15:[m[K [01;36m[Knote: [m[K...this statement, but the latter is misleadingly indented as if it were guarded by the ‘[01m[Kelse[m[K’
+  261 |               [01;36m[Kbreak[m[K;
+      |               [01;36m[K^~~~~[m[K
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o ioconf.o ioconf.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o queue.o queue/queue.c
+as --32 -c -o crt01.o crt01.s
+as --32 -c -o crt02.o crt02.s
+as --32 -c -o crt03.o crt03.s
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o uprog1.o uprog1.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o uprog2.o uprog2.c
+gcc -gdwarf-2 -gstrict-dwarf -march=i586 -m32 -fno-builtin -fno-stack-protector -nostdlib     -c -Wall -I/home/cheungr/serl/tutor-linux/include -c -o uprog3.o uprog3.c
+as --32 -c -o ulib.o ulib.s
+ld -m elf_i386 -N -Ttext 100100 -o tunix.lnx \
+startup0.o startup.o tunix.o sysentry.o asmswtch.o sched.o io.o tty.o ioconf.o queue.o  crt01.o crt02.o crt03.o uprog1.o uprog2.o uprog3.o ulib.o  /home/cheungr/serl/tutor-linux/libc/libc.a
+rm -f syms;nm -n tunix.lnx>tunix.syms;ln -s tunix.syms syms
+aguiney@pe15:~/cs444/hw3$ ls -al
+total 316
+drwxrwsr-x 3 aguiney cs444-1G  4096 Nov 29 22:48 .
+drwxrws--- 7 aguiney cs444-1G  4096 Nov 18 12:11 ..
+-rw-r--r-- 1 aguiney cs444-1G   528 Nov 29 22:48 asmswtch.o
+-rw-r--r-- 1 aguiney cs444-1G  1539 Nov 16 19:20 asmswtch.s
+-rw-r--r-- 1 aguiney cs444-1G   592 Nov 29 22:48 crt01.o
+-rw-r--r-- 1 aguiney cs444-1G   586 Nov 29 21:58 crt01.s
+-rw-r--r-- 1 aguiney cs444-1G   592 Nov 29 22:48 crt02.o
+-rw-r--r-- 1 aguiney cs444-1G   585 Nov 29 21:58 crt02.s
+-rw-r--r-- 1 aguiney cs444-1G   592 Nov 29 22:48 crt03.o
+-rw-r--r-- 1 aguiney cs444-1G   585 Nov 29 21:58 crt03.s
+-rw-r--r-- 1 aguiney cs444-1G   473 Nov 22 19:20 crt0.s
+-rw-r--r-- 1 aguiney cs444-1G  1510 Nov 16 19:43 io.c
+-rw-r--r-- 1 aguiney cs444-1G   411 Nov 16 19:43 ioconf.c
+-rw-r--r-- 1 aguiney cs444-1G   819 Nov 16 19:43 ioconf.h
+-rw-r--r-- 1 aguiney cs444-1G  2984 Nov 29 22:48 ioconf.o
+-rw-r--r-- 1 aguiney cs444-1G  4500 Nov 29 22:48 io.o
+-rw-r--r-- 1 aguiney cs444-1G  3054 Nov 22 19:20 makefile
+-rw-r--r-- 1 aguiney cs444-1G  1394 Nov 29 22:04 proc.h
+drwxrwsr-x 2 aguiney cs444-1G  4096 Nov 16 19:20 queue
+-rw-r--r-- 1 aguiney cs444-1G  8356 Nov 29 22:48 queue.o
+-rw-r--r-- 1 aguiney cs444-1G  1758 Nov 29 22:34 README
+-rw-r--r-- 1 aguiney cs444-1G  4261 Nov 29 21:41 sched.c
+-rw-r--r-- 1 aguiney cs444-1G   541 Nov 29 21:41 sched.h
+-rw-r--r-- 1 aguiney cs444-1G  9812 Nov 29 22:48 sched.o
+-rw-r--r-- 1 aguiney cs444-1G   580 Nov 29 22:48 startup0.o
+-rw-r--r-- 1 aguiney cs444-1G   260 Nov 16 19:43 startup0.s
+-rw-r--r-- 1 aguiney cs444-1G   342 Nov 16 19:43 startup.c
+-rw-r--r-- 1 aguiney cs444-1G  2536 Nov 29 22:48 startup.o
+lrwxrwxrwx 1 aguiney cs444-1G    10 Nov 29 22:48 syms -> tunix.syms
+-rw-r--r-- 1 aguiney cs444-1G   560 Nov 29 22:48 sysentry.o
+-rw-r--r-- 1 aguiney cs444-1G   627 Nov 16 19:43 sysentry.s
+-rw-r--r-- 1 aguiney cs444-1G  1683 Nov 16 19:43 test1.c
+-rw-r--r-- 1 aguiney cs444-1G   235 Nov 16 19:43 tsyscall.h
+-rw-r--r-- 1 aguiney cs444-1G   583 Nov 16 19:43 tsystm.h
+-rw-r--r-- 1 aguiney cs444-1G  8557 Nov 29 21:39 tty.c
+-rw-r--r-- 1 aguiney cs444-1G   744 Nov 16 19:43 tty.h
+-rw-r--r-- 1 aguiney cs444-1G 12804 Nov 29 22:48 tty.o
+-rw-r--r-- 1 aguiney cs444-1G   415 Nov 16 19:43 tty_public.h
+-rw-r--r-- 1 aguiney cs444-1G   616 Nov 16 19:43 tunistd.h
+-rw-r--r-- 1 aguiney cs444-1G  8307 Nov 29 22:32 tunix.c
+-rwxr-xr-x 1 aguiney cs444-1G 56204 Nov 29 22:48 tunix.lnx
+-rw-r--r-- 1 aguiney cs444-1G 10248 Nov 29 22:48 tunix.o
+-rw-r--r-- 1 aguiney cs444-1G  2698 Nov 29 22:48 tunix.syms
+-rw-r--r-- 1 aguiney cs444-1G   608 Nov 29 22:48 ulib.o
+-rw-r--r-- 1 aguiney cs444-1G  1191 Nov 16 19:43 ulib.s
+-rw-r--r-- 1 aguiney cs444-1G   557 Nov 29 21:59 uprog1.c
+-rw-r--r-- 1 aguiney cs444-1G  2744 Nov 29 22:48 uprog1.o
+-rw-r--r-- 1 aguiney cs444-1G   477 Nov 29 22:00 uprog2a.c
+-rw-r--r-- 1 aguiney cs444-1G   338 Nov 29 22:00 uprog2.c
+-rw-r--r-- 1 aguiney cs444-1G  2580 Nov 29 22:48 uprog2.o
+-rw-r--r-- 1 aguiney cs444-1G   338 Nov 29 22:01 uprog3.c
+-rw-r--r-- 1 aguiney cs444-1G  2580 Nov 29 22:48 uprog3.o
+aguiney@pe15:~/cs444/hw3$ cat syms
+00000018 a KERNEL_DS
+00000018 a KERNEL_DS
+00100100 T _start
+0010010a T finale
+0010010b T _startupc
+00100137 T __x86.get_pc_thunk.bx
+0010013b T k_init
+001001dd T init_proctab
+001002ec T shutdown
+001003a4 T syscallc
+00100438 T sysexit
+001004ac T uset_trap_gate
+001004d6 T udebug_set_trap_gate
+001005ad T debug_log
+00100601 T process0
+0010063c T delay
+00100669 T __x86.get_pc_thunk.ax
+0010066d T syscall
+0010067d T asmswtch
+001006b6 T schedule
+0010085a T sleep
+001008a3 T wakeup
+0010092f T log_process_switch
+00100b1f T __x86.get_pc_thunk.dx
+00100b23 T ioinit
+00100b77 T sysread
+00100bcb T syswrite
+00100c1f T syscontrol
+00100c73 T ttyinit
+00100d87 T ttyread
+00100e2f T ttywrite
+00100fda T ttycontrol
+00101027 T irq4inthandc
+0010104b T irq3inthandc
+0010106f T irqinthandc
+001012d2 T init_queue
+00101340 T emptyqueue
+00101381 T enqueue
+0010140f T dequeue
+0010147b T queuecount
+00101494 t addone
+001014be T ustart1
+001014d3 T ustart2
+001014e8 T ustart3
+001014fd T main1
+00101574 T main2
+001015ab T main3
+001015e2 T write
+001015f8 T read
+0010160e T ioctl
+00101624 T exit
+00101632 T irq3inthand
+0010164c T irq4inthand
+00101666 T locate_idt
+00101688 t locate_gdt
+001016aa T get_cr0
+001016ae T set_cr0
+001016b6 T get_cr2
+001016ba T get_cr3
+001016be T set_cr3
+001016c6 T get_eflags
+001016c9 T set_eflags
+001016cf T cli
+001016d1 T sti
+001016d3 T invd
+001016db T outpt
+001016e6 T inpt
+001016ef T breakpoint
+001016f1 T clr_bss
+00101703 T printf
+00101742 T sprintf
+00101793 t sprntf
+001017cc T strcpy
+00101801 T strlen
+00101835 T set_trap_gate
+0010185f T debug_set_trap_gate
+00101936 T set_intr_gate
+00101960 T debug_set_intr_gate
+00101a3d T cpu_cache_off
+00101a7b T cpu_cache_on
+00101ab4 T pic_enable_irq
+00101b6b T pic_disable_irq
+00101c1e T pic_end_int
+00101c4a T pic_end_int2
+00101c87 T kprintf
+00101ce1 T init_devio
+00101d02 T init
+00101d7b T rawputc
+00101e13 t delay
+00101e40 T putc
+00101f70 T rawgetc
+00101ffd T getc
+00102070 T readyc
+001020fd T devcontrol
+00102190 T devdescript
+00102220 T devname
+001022a3 T __x86.get_pc_thunk.cx
+001022a7 T _fdoprnt
+00102464 t .L27
+00102486 t .L24
+001024ac t .L26
+001024dd t .L23
+00102535 t .L25
+00102560 t .L29
+00102588 t .L21
+001025b0 t .L28
+001025d8 t .L20
+00102740 t _prtl10
+001027ec t _prtl8
+0010287f t _prtl16
+00102910 t _prtX16
+001029a1 t _prtl2
+00103730 d _GLOBAL_OFFSET_TABLE_
+00103740 D debug_log_area
+00103760 D devtab
+00103798 d idt_info
+00103798 d idt_limit
+0010379a d idt_addr
+0010379e d gdt_info
+0010379e d gdt_limit
+001037a0 d gdt_addr
+001037a4 B __bss_start
+001037a4 D _edata
+001037c0 b sysent
+001037f0 B sysapi2
+00103800 B lastproc
+00103804 B num_zombies
+00103808 B curproc
+00103820 B proctab
+001038c0 B debug_record
+001038e0 B ttytab
+00103ba0 B _end
+aguiney@pe15:~/cs444/hw3$ exit
+logout
+Connection to users.cs.umb.edu closed.
+tuser@tutor-vserver:~$ scp aguiney@users.cs.umb.edu:cs444/hw3/tunix.lnx .
+aguiney@users.cs.umb.edu's password: 
+tunix.lnx                                       0%    0     0.0KB/s   --:-- ETAtunix.lnx                                     100%   55KB  54.9KB/s   00:00    
+tuser@tutor-vserver:~$ ls
+eth.txt  [0m[01;34minclude[0m  [01;34mlib[0m  [01;34mtestaout[0m  [01;34mtestelf[0m  testelf.syms  [01;32mtunix.lnx[0m  typescript
+tuser@tutor-vserver:~$ mtip -f tunix.lnx
+For command help, type ~?
+For help on args, rerun without args
+Code starts at 0x100100
+Using board # 1 
+Please type <CR> to confirm console setting: 
+Setting console dev to COM2Console: colour EGA+ 80x25
+COM1 at 0x03f8 (irq = 4) is a 16550A
+COM2 at 0x02f8 (irq = 3) is a 16550A
+
+                 Welcome to UMB Tutor for the PC
+   UMB Tutor is a 32-bit protected-mode PC debugger/downloader,
+       based on Linux, UMB Tutor for m68k, and remote gdb.
+UMB Tutor is free software and you are welcome to distribute copies
+of it under certain conditions.  There is no warranty for this program.
+The copyright and warranty provisions follow the Gnu general public
+license, available for view in gdb and elsewhere.  Full sources available.
+--bugs, suggestions, questions to eoneil@cs.umb.edu
+
+Exception 3 at EIP=00057a9b: Breakpoint
+Tutor> ~downloading tunix.lnx
+
+..............Done.
+
+Download done, setting EIP to 100100.
+Tutor> go 100100
+aaaaaabbbbbbccccccaaaazzzAAAAAAbbbb
+ EXIT CODE IS 4
+cccc
+ EXIT CODE IS 6
+AAAA
+ EXIT CODE IS 2
+SHUTTING THE SYSTEM DOWN!
+Debug log from run:
+Marking kernel events as follows:
+   *   TX interrupt occured.
+  [c]  Character put in TX queue.
+  >c   Character output from TX queue.
+|(0-1)[a][a][a][a][a][a]|(1b-2)*>a*>a*>a*>a*>a*>a*[b][b][b][b][b][b]|(2b-3)*>b*>b*>b*>b*>b*>b*[c][c][c][c][c][c]|(3b-1)*>c*>c*>c*>c*>c*>c**[a][a][a][a]*>a*>a*>a*>a*[z][z][z]*>z*>z*>z*[A][A][A][A][A][A]|(1b-2)*>A*>A*>A*>A*>A*>A**[b][b][b][b]*>b*>b*>b*>b*|(2z-3)*[c][c][c][c]*>c*>c*>c*>c*|(3z-1)*[A][A][A][A]*>A*>A*>A*>A*|(1z-0)
+LEAVE KERNEL!
+
+Exception 3 at EIP=0010010b: Breakpoint
+Tutor> 
+Tutor> 
+Quit handler: 
+killing process 1881 Leaving board #1
+tuser@tutor-vserver:~$ exit
+exit
+
+Script done on Mon 29 Nov 2021 10:49:58 PM EST
