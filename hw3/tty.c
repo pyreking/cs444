@@ -1,5 +1,5 @@
 /*********************************************************************
-*
+*       Modified by Austin Guiney for the CS444 class.
 *       file:           tty.c
 *       author:         betty o'neil
 *                       Ray Zhang
@@ -137,27 +137,38 @@ int ttywrite(int dev, char *buf, int nchar)
 
     /* now tell transmitter to interrupt (or restart output) */
     outpt( baseport+UART_IER, UART_IER_RDI | UART_IER_THRI); /* enable both */
-    /* read and write int's */
-    //set_eflags(saved_eflags);
+
     /* loop till all chars are gotten into queue, spinning as needed */
     while ( i < nchar ) {
 	    cli();			/* enqueue is critical code */
+
+      /* If the TX queue is full, block the current process. */
 	    while (enqueue( &(tty->tbuf), buf[i]) == FULLQUE) {
+        /* Find out if the COM port is TTY0 or TTY1. */
         if (dev == TTY0) {
+          /* Block the current process. */
           sleep(TTY0_OUTPUT);
         } else {
+          /* Block the current process. */
           sleep(TTY1_OUTPUT);
         }
+        /* Enable interrupts for RDI and THRI. */
 	      outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
 	    }
+      /* The char buffer used for the debug log. */
       char qbuf[BUFLEN];
+      /* Log the character that was put into the queue. */
       sprintf(qbuf, "[%c]", buf[i]);
+      /* Update the debug log. */
       debug_log(qbuf);
+      /* Increment the buffer counter. */
       i++;
 	    set_eflags(saved_eflags); /* restore CPU flags */
     }
+    /* Enable interrupts for RDI and THRI. */
     outpt(baseport+UART_IER, UART_IER_RDI | UART_IER_THRI);
 
+    /* Return the number of characters written. */
     return nchar;
 }
 
@@ -231,14 +242,18 @@ void irqinthandc(int dev)
         else if (queuecount( &tty->tbuf ))  {
 	    /* if there is char in tbuf Q output it */
                ch =dequeue(&tty->tbuf);
+         /* Log the character that was removed from the queue. */
 	       sprintf(log, ">%c", ch);
+         /* Update the debug log. */
 	       debug_log(log);
-        
-        if (dev == TTY0) {
-             wakeup(TTY0_OUTPUT);
-           } else {
-             wakeup(TTY1_OUTPUT);
-           }
+        /* Find out if the COM port is TTY0 or TTY1. */
+          if (dev == TTY0) {
+            /* Wake up every process since the TX queue has room now. */
+            wakeup(TTY0_OUTPUT);
+          } else {
+            /* Wake up every process since the TX queue has room now. */
+            wakeup(TTY1_OUTPUT);
+          }
 	       outpt( baseport+UART_TX, ch ) ; /* ack tx dev */
              }
              else		/* all done transmitting */

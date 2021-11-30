@@ -1,4 +1,11 @@
-/* file: tunix.c core kernel code */
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           tunix.c
+*       date:           11/29/2021
+*
+*       Core kernel code.
+*
+*/
 
 #include <cpu.h>
 #include <gates.h>
@@ -8,17 +15,25 @@
 #include "sched.h"
 #include <string.h>
 
+/* Symbolic constants for the delay function. */
 #define MILLION 1000000
 #define DELAY (400 * MILLION)
 
+/* Main method for process 1. */
 extern void ustart1(void);
+/* Main method for process 2. */
 extern void ustart2(void);
+/* Main method for process 3. */
 extern void ustart3(void);
 
+/* Initializes the process table. */
 void init_proctab(void);
+/* Calls the scheduler if the processes are not zombies and shutdowns the OS afterwards. */
 void process0(void);
+/* Small delay used for draining output from the TX queue. */
 void delay(void);
 
+/* Initializes the process table variables defined in proc.h. */
 PEntry proctab[NPROC], *curproc, *lastproc;
 
 extern IntHandler syscall; /* the assembler envelope routine    */
@@ -69,28 +84,38 @@ void k_init(){
   sysent[TIOCTL].sy_narg = 3;
   sysent[TWRITE].sy_narg = 3;
 	sti(); /* user runs with interrupts on */
+  /* Initializes the process table. */
 	init_proctab();
+  /* Call process 0. */
 	process0();
 }
 
+
+/* Initializes the process table. */
 void init_proctab() {
 	int i;
 
+  /* Set the SAVED_PC values for the three user processes. */
 	proctab[1].p_savedregs[SAVED_PC] = (int) &ustart1;
 	proctab[2].p_savedregs[SAVED_PC] = (int) &ustart2;
 	proctab[3].p_savedregs[SAVED_PC] = (int) &ustart3;
 
+  /* Set the SAVED_ESP values for the three user processes. */
 	proctab[1].p_savedregs[SAVED_ESP] = ESP1;
 	proctab[2].p_savedregs[SAVED_ESP] = ESP2;
 	proctab[3].p_savedregs[SAVED_ESP] = ESP3;
 
+  /* Set the SAVED_EFLAGS, SAVED_ESP and status values for process 0 and the
+   * three user processes. */
 	for (i = 0; i < NPROC; i++) {
 		proctab[i].p_savedregs[SAVED_EFLAGS] = 0x1 << 9;
     proctab[i].p_savedregs[SAVED_EBP] = 0;
 		proctab[i].p_status = RUN;
 	}
 
+  /* Set the current process to process 0. */
 	curproc = &proctab[0];
+  /* Set the last process to run to process 0. */
   lastproc = curproc;
 }
 
@@ -139,10 +164,15 @@ void syscallc( int user_eax, int devcode, char *buff , int bufflen)
 /****************************************************************************/
 
 int sysexit(int exit_code){
+  /* Disable interrupts because of critical region. */
   cli();
+  /* Update the exit value of the zombie process. */
   curproc->p_exitval = exit_code;
+  /* Set the status of the current process to ZOMBIE. */
   curproc->p_status = ZOMBIE;
+  /* Print out the exit code of the zombie process. */
   kprintf("\n EXIT CODE IS %d\n", exit_code);
+  /* Call the scheduler. */
   schedule();
 	shutdown();  /* we have only one program here, so all done */
 	return 0;    /* never happens, but keeps gcc happy */
@@ -191,17 +221,21 @@ void debug_log(char *msg)
     debug_record +=strlen(msg);
 }
 
+/* Calls the scheduler if the processes are not zombies and shutdowns the OS afterwards. */
 void process0() {
+  /* Continually call the scheduler until there are no more processes to run. */
 	while ((proctab[1].p_status == RUN) || (proctab[2].p_status == RUN) ||
         (proctab[3].p_status == RUN)) {
 	  schedule();
 	}
   
-  delay();      
+  /* Drain the output from the TX queue. */
+  delay();
+  /* Shutdown the OS. */
 	shutdown();
 }
 
-
+/* Small delay used for draining output from the TX queue. */
 void delay() {
   int i;
 

@@ -1,3 +1,12 @@
+/*********************************************************************
+*       Modified by Austin Guiney for CS444 class.
+*       file:           uprog1.c
+*       date:           11/29/2021
+*
+*       Main method for process 1.
+*
+*/
+
 #include "tunistd.h"
 #include "tty_public.h"
 

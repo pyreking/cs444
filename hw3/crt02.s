@@ -1,3 +1,12 @@
+/*********************************************************************
+*       file:           crt02.s
+*       author:         Austin Guiney
+*       date:           11/29/2021
+*
+*       Starts process 2 and then exits.
+*
+*/
+
 .globl ustart2, main2, exit
 .text
 			
