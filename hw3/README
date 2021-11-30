@@ -1,0 +1,43 @@
+Author: Austin Guiney
+Date: November 29th, 2021
+typescript file: austin_guiney_hw3_typescript.script.
+
+Instructions:
+run `make clean` to removed the executable files from the directory.
+run `make tunix.lnx` to build the executable file.
+run `mtip -f tunix.lnx` and `~d` on tutor-vserver VM to download the program onto tutor.
+run `go 100100` on tutor to run the program.
+
+Shared between user and kernel:
+
+   tty_public.h: TTY device numbers
+   tsyscall.h: syscall numbers (like UNIX sys/syscall.h)
+
+Kernel files:
+
+   tsystm.h: syscall dispatch, kernel fn protos (like UNIX sys/systm.h)
+   startup0.s: same as $pclibsrc/startup0.s.  Sets up stack, calls
+        into startup1.c
+   startup1.c: Same as $pclibsrc/startup.c, but calls your kernel
+        initialization routine instead of main.
+   tunix.c:  main kernel code: init, system call dispatch, shutdown
+   sysentry.s: system call trap handler assembly envelope.  Calls syscallc.
+   io.h, io.c, ioconf.h, ioconf.c: device-independent io system
+   tty.c, tty.h, tty_public.h:  tty driver from hw1, almost unchanged,
+                                   (now tty.c does some debug_log calls)
+   sched.c: a non-preemptive scheduler for the tunix kernel.
+   sched.h: function prototypes for the scheduler.
+   asmswtch.s: switch CPU context for multitasking.
+
+User-level files:
+
+   tunistd.h: syscall prototypes (like UNIX unistd.h)
+   test1.c:  has main(). User program.
+   ulib.s:  library routines for syscalls: _read, _write, _exit
+   crt01.s, crt02.s, crt03.s:  user-level "C startup module"  calls mainX,
+  	does exit syscall. Entry point ustartX. X = 1, 2, or 3.
+   prog1.c, prog2.c, prog2a.c, and prog3.c: the three user level processes.
+   proc.h: header file that includes code for the process table.
+
+test1.sh: provided shell script for automatic run, with input
+test1.script: script from run of system, showing debug log output
