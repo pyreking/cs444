@@ -1,0 +1,359 @@
+Script started on Mon 13 Dec 2021 03:36:36 PM EST
+tuser@tutor-vserver:~$ mtip
+Usage: mtip [-b board#] [-f download-file]
+specify board by #: -b 1, etc.; defaults to scan.
+more flags: [-x debuglevel] -e <escchar>
+  Use ~ or Esc for mtip commands such as ~q or <Esc>q to quitfor more info on commands, type ~? or Esc? once program is running
+now scanning for free board...
+Using board # 1 
+
+Please type <CR> to confirm console setting: 
+Setting console dev to COM2Console: colour EGA+ 80x25
+COM1 at 0x03f8 (irq = 4) is a 16550A
+COM2 at 0x02f8 (irq = 3) is a 16550A
+
+                 Welcome to UMB Tutor for the PC
+   UMB Tutor is a 32-bit protected-mode PC debugger/downloader,
+       based on Linux, UMB Tutor for m68k, and remote gdb.
+UMB Tutor is free software and you are welcome to distribute copies
+of it under certain conditions.  There is no warranty for this program.
+The copyright and warranty provisions follow the Gnu general public
+license, available for view in gdb and elsewhere.  Full sources available.
+--bugs, suggestions, questions to eoneil@cs.umb.edu
+
+Exception 3 at EIP=00057a9b: Breakpoint
+
+/*
+ * Question 1:
+ *
+ * With a fresh system (reboot to make sure),
+ * dump the first 4 PTEs and analyze them
+ * (status bits, what VA->PA translation they do).
+ *
+ * PA 52000 to 5200c is the location of the first 4 PTEs.
+ *
+ * page 0 -> page frame 1
+ * page 1 -> page frame 1
+ * page 2 -> page frame 2
+ * page 3 -> page frame 4
+ *
+ * Status bits for PTE0 to PTE03: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ *
+ */
+
+Tutor> mdd 52000
+
+00052000    00000007 00001007 00002007 00003007 ......... ...0..
+
+/*
+ * Question 2:
+ *
+ * Find and dump the first 4 PTEs for the Tutor program and analyze them.
+ * The Tutor program starts at VA 50000.
+ *
+ * The PTEs for tutor start at PA 0x52140.
+
+ * VA 50000 = [0000 0000 00] [00 0101 0000] [0000 0000 0000]
+           [PDE = 0x00]   [PTE = 0x50]   [Offset = 0x00]
+
+ * 0x50 = Page number 0x50
+ * PA 52000 + (0x50 * 4) = PA 0x52140
+ * 0x52140 + 0x00 = 0x52140
+
+ * page 50 -> page frame 50
+ * page 51 -> page frame 51
+ * page 52 -> page frame 52
+ * page 53 -> page frame 53
+
+ * Status bits for PTE50: G = 0, L = 0, D = 0, A = 1, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ * Status bits for PTE51: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ * Status bits for PTE52: G = 0, L = 0, D = 0, A = 1, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ * Status bits for PTE53: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ *
+ */
+
+Tutor> mdd 52140
+
+00052140    00050027 00051007 00052027 00053007 '.......' ...0..
+
+/*
+ * Question 2 (continued):
+ * Find some PTEs for pages that have never been touched since system reset,
+ * above VA 50000, i.e. after Tutor.
+ *
+ * Pages starting at 0x521c0 have never been touched since system start because
+ * the dirty bit and access bit are both set to 0.
+ *
+ * page 70 -> page frame 70
+ * page 71 -> page frame 71
+ * page 72 -> page frame 72
+ * page 73 -> page frame 73
+ *
+ * Status bits for PTE70 to PTE73: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ *
+ */
+
+Tutor> mdd 521c0
+
+000521c0    00070007 00071007 00072007 00073007 ......... ...0..
+
+/*
+ * Question 3:
+ *
+ * Set page 3 as valid but not yet referenced.
+ * Then do a read on it, check the PTE, then a write,
+ * check the PTE and interpret your findings.
+ * 
+ * PTE03 corresponds to PA 5200c. The page is valid but not yet referenced because
+ * the V bit is set to 1 and the access and dirty bits are both set to 0.
+ *
+ * Status bits: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ *
+ */
+
+Tutor> mdd 5200c
+
+0005200c    00003007 00004007 00005007 00006007 .0...@...P...`..
+
+/* 
+ * Question 3 (continued):
+ *
+ * PA 3000 corresponds to page 3.
+ * 
+ * After reading page 3 without modifying it, the access bit gets set to 1.
+ * Status bits for PTE03 after read: G = 0, L = 0, D = 0, A = 1, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ * 
+ */
+
+Tutor> mdd 3000
+
+00003000    00007fd4 00000000 00205330 00008e00 ........0S .....
+Tutor> mdd 5200c
+
+0005200c    00003027 00004007 00005007 00006007 '0...@...P...`..
+
+/* 
+ * Question 3 (continued):
+ * 
+ * After modifying page 3, the dirty bit gets set to 1.
+ * Status bits for PTE03 after write: G = 0, L = 0, D = 1, A = 1, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ *
+ */
+
+Tutor> ms 3000 00
+
+Tutor> mdd 3000
+
+00003000    00007f00 00000000 00205330 00008e00 ........0S .....
+Tutor> mdd 5200c
+
+0005200c    00003067 00004007 00005007 00006007 g0...@...P...`..
+
+/*
+* Question 4:
+*
+* Now set page 3 as invalid (not present) and try reads and writes.
+* You see that nothing special has happened. 
+* That's because the PTE in the TLB is still showing the page as present,
+* and the MMU checks the TLB before looking at memory PTs.
+*
+* PA 5200c corresponds to PTE03.
+* VA 3000 corresponds to page 3.
+*
+* Modifying PTE03 to have the value 6 sets the valid bit 0.
+* Status bits for PT03: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 0
+*
+* After setting the page as invalid, a page fault occurs when reading and
+* writing to page 3 because of an incorrect implementation of the TLB in the VM.
+*
+*/
+
+Tutor> ms 5200c 6
+
+Tutor> mdd 5200c
+
+0005200c    00003006 00004007 00005007 00006007 .0...@...P...`..
+Tutor> mdd 3000
+
+00003000    Exception 14 at EIP=00060d9e: Page fault
+Tutor> ms 3000 00
+
+Exception 14 at EIP=00061045: Page fault
+
+/*
+ * Question 5:
+ *
+ * Writing a value in the CR3 registers flushes the TLB, i.e., makes it drop all its cache entries.
+ * This can be done using the Tutor register-set command.  Use the same old CR3 value, of course,
+ * or expect to reboot, for example: "Tutor> rs cr3 51000". Do this and retry 4.
+ * You should see a page fault, exception 14. Use "rd all" to see CR2, the "linear address",
+ * which is the address that causes the page fault.
+ *
+ * PA 5200c corresponds to PTE03.
+ * VA 3000 corresponds to page 3.
+ * 
+ * After flushing the TLB, a page fault still occurs when reading and writing to
+ * page 3 when it is not valid. After a page fault occurs on page 3, CR2 gets set to 3000.
+ *
+ * Status bits for PT03: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 0
+ *
+ */
+Tutor> rd all
+
+EAX=00000000 EBX=0006f548   EBP=0006f520
+EDX=00003000 ECX=000655a4   ESP=0006f520
+ESI=0006f548 EDI=00000002   EIP=00061045
+EFLAGS=10202 (IF=1 SF=0 ZF=0 CF=0 OF=0)
+CS=0010 DS=0018 SS=0018 ES=0018 FS= 0018 GS=0018
+CR0=80050033   CR2=c0003000   CR3=51000
+IDTR=c005604c (limit 7ff)  GDTR=c0056854 (limit 4f)
+Tutor> rs cr3 51000
+
+Tutor> rd all
+
+EAX=00000000 EBX=0006f548   EBP=0006f520
+EDX=00003000 ECX=000655a4   ESP=0006f520
+ESI=0006f548 EDI=00000002   EIP=00061045
+EFLAGS=10202 (IF=1 SF=0 ZF=0 CF=0 OF=0)
+CS=0010 DS=0018 SS=0018 ES=0018 FS= 0018 GS=0018
+CR0=80050033   CR2=c0003000   CR3=51000
+IDTR=c005604c (limit 7ff)  GDTR=c0056854 (limit 4f)
+Tutor> mdd 5200c
+
+0005200c    00003006 00004007 00005007 00006007 .0...@...P...`..
+Tutor> mdd 3000
+
+00003000    Exception 14 at EIP=00060d9e: Page fault
+Tutor> ms 3000 00
+
+Exception 14 at EIP=00061045: Page fault
+Tutor> rd all
+
+EAX=00000000 EBX=0006f548   EBP=0006f520
+EDX=00003000 ECX=000655a4   ESP=0006f520
+ESI=0006f548 EDI=00000002   EIP=00061045
+EFLAGS=10202 (IF=1 SF=0 ZF=0 CF=0 OF=0)
+CS=0010 DS=0018 SS=0018 ES=0018 FS= 0018 GS=0018
+CR0=80050033   CR2=c0003000   CR3=51000
+IDTR=c005604c (limit 7ff)  GDTR=c0056854 (limit 4f)
+
+/*
+ * Question 6:
+ *
+ * Write the appropriate PTEs to make both VA 3000 and VA 5000 refer to PA 5000.
+ * Show that it is working by writing once and reading twice.
+ * (After you modify the PTE, use the ms command to modify a location in PA 5000.
+ * Read the location in VA 3000 and VA 5000. They should yield the same value.)
+ *
+ * PA 5200c corresponds to PTE03 and VA 3000 corresponds to page 3.
+ * PA 5200e corresponds to PTE05 and VA 5000 corresponds to page 5.
+ *
+ * Modifying PTE03 to have the value 5007 will map PTE03 to page 5.
+ *
+ * Status bits for PTE03 after modifying: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ * Status bits for PTE05: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ *
+ */
+
+Tutor> mdd 5200c
+
+0005200c    00003006 00004007 00005007 00006007 .0...@...P...`..
+Tutor> ms 5200c 5007
+
+Tutor> mdd 5200c
+
+0005200c    00005007 00004007 00005007 00006007 .P...@...P...`..
+
+/*
+ * Question 6 (continued):
+ *
+ * After mapping PTE03 to VA 5000, VA 3000 and VA 5000 will both have the same value when
+ * reading each address.
+ *
+ */
+
+Tutor> mdd 3000
+
+00003000    00000000 00000000 00000000 00000000 ................
+Tutor> mdd 5000
+
+00005000    00000000 00000000 00000000 00000000 ................
+
+
+/*
+ * Question 6 (continued):
+ *
+ * Modifying the value of VA 5000 will also modify the value of VA 3000.
+ *
+ */
+
+Tutor> ms 5000 ff
+
+Tutor> mdd 5000
+
+00005000    000000ff 00000000 00000000 00000000 ................
+Tutor> mdd 3000
+
+00003000    000000ff 00000000 00000000 00000000 ................
+
+/*
+ * Question 6 (continued):
+ *
+ * Modifying the value of VA 3000 will also modify the value of VA 5000.
+ *
+ */
+
+Tutor> ms 3000 ab
+
+Tutor> mdd 3000
+
+00003000    000000ab 00000000 00000000 00000000 ................
+Tutor> mdd 5000
+
+00005000    000000ab 00000000 00000000 00000000 ................
+Tutor> mdd 5200c
+
+0005200c    00005067 00004007 00005067 00006007 gP...@..gP...`..
+
+/*
+ * Question 7:
+ * 
+ * As a final suicidal action, wipe out the PDE (page directory entry) governing the PT we're using.
+ * This PDE is accessible at VA 51c00. Is the PDE cached?
+ *
+ * VA 51c00 is not cached becaused the cache bit is set to 0.
+ * Status bits for VA 51c00: G = 0, L = 0, D = 0, A = 1, C = 0, Wt = 0, U = 1, W = 1, V = 1
+ *
+ * After wiping out VA 51c00, the tutor VM restarts.
+ *
+ */
+
+Tutor> mdd 51c00
+
+00051c00    00052027 00000000 00000000 00000000 ' ..............
+Tutor> ms 51c00 00
+
+Please type <CR> to confirm console setting: 
+Setting console dev to COM2Console: colour EGA+ 80x25
+COM1 at 0x03f8 (irq = 4) is a 16550A
+COM2 at 0x02f8 (irq = 3) is a 16550A
+
+                 Welcome to UMB Tutor for the PC
+   UMB Tutor is a 32-bit protected-mode PC debugger/downloader,
+       based on Linux, UMB Tutor for m68k, and remote gdb.
+UMB Tutor is free software and you are welcome to distribute copies
+of it under certain conditions.  There is no warranty for this program.
+The copyright and warranty provisions follow the Gnu general public
+license, available for view in gdb and elsewhere.  Full sources available.
+--bugs, suggestions, questions to eoneil@cs.umb.edu
+
+Exception 3 at EIP=00057a9b: Breakpoint
+Tutor> 
+
+Tutor> 
+Quit handler: 
+killing process 1820 Leaving board #1
+tuser@tutor-vserver:~$ exit
+exit
+
+Script done on Mon 13 Dec 2021 03:42:52 PM EST
