@@ -30,12 +30,25 @@ Exception 3 at EIP=00057a9b: Breakpoint
  * dump the first 4 PTEs and analyze them
  * (status bits, what VA->PA translation they do).
  *
- * PA 52000 to 5200c is the location of the first 4 PTEs.
+ * PA 52000 to 52000c is the location of the first 4 PTEs.
+ * VA 0000 to 3000 are the virtual addresses of the first 4 PTEs.
  *
- * page 0 -> page frame 1
+ * page 0 -> page frame 0
  * page 1 -> page frame 1
  * page 2 -> page frame 2
  * page 3 -> page frame 4
+ *
+ * VA 00000 = [0000 0000 00] [00 0000 0000] [0000 0000 0000]
+ *            [PDE = 0x00]   [PTE = 0x00]   [Offset = 0x00]
+ *
+ * 0x00 = page number 0
+ * PA 52000 + (0x00 * 4) = PA 52000
+ * PA 52000 + 0x00 = PA 52000
+ *
+ * VA 00000 -> PA 52000
+ * VA 01000 -> PA 52004
+ * VA 02000 -> PA 52008
+ * VA 03000 -> PA 5200c
  *
  * Status bits for PTE0 to PTE03: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
  *
@@ -51,20 +64,25 @@ Tutor> mdd 52000
  * Find and dump the first 4 PTEs for the Tutor program and analyze them.
  * The Tutor program starts at VA 50000.
  *
- * The PTEs for tutor start at PA 0x52140.
-
+ * The first 4 PTEs for tutor start at PA 0x52140 and end at PA 0x5214c.
+ *
  * VA 50000 = [0000 0000 00] [00 0101 0000] [0000 0000 0000]
-           [PDE = 0x00]   [PTE = 0x50]   [Offset = 0x00]
-
+ *            [PDE = 0x00]   [PTE = 0x50]   [Offset = 0x00]
+ *
  * 0x50 = Page number 0x50
  * PA 52000 + (0x50 * 4) = PA 0x52140
  * 0x52140 + 0x00 = 0x52140
-
+ *
  * page 50 -> page frame 50
  * page 51 -> page frame 51
  * page 52 -> page frame 52
  * page 53 -> page frame 53
-
+ *
+ * VA 50000 -> PA 52140
+ * VA 51000 -> PA 52144
+ * VA 52000 -> PA 52148
+ * VA 53000 -> PA 5214c
+ *
  * Status bits for PTE50: G = 0, L = 0, D = 0, A = 1, C = 0, Wt = 0, U = 1, W = 1, V = 1
  * Status bits for PTE51: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 1
  * Status bits for PTE52: G = 0, L = 0, D = 0, A = 1, C = 0, Wt = 0, U = 1, W = 1, V = 1
@@ -161,7 +179,7 @@ Tutor> mdd 5200c
 * VA 3000 corresponds to page 3.
 *
 * Modifying PTE03 to have the value 6 sets the valid bit 0.
-* Status bits for PT03: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 0
+* Status bits for PT03 after making it invalid: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 0
 *
 * After setting the page as invalid, a page fault occurs when reading and
 * writing to page 3 because of an incorrect implementation of the TLB in the VM.
@@ -195,7 +213,7 @@ Exception 14 at EIP=00061045: Page fault
  * After flushing the TLB, a page fault still occurs when reading and writing to
  * page 3 when it is not valid. After a page fault occurs on page 3, CR2 gets set to 3000.
  *
- * Status bits for PT03: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 0
+ * Status bits for PT03 after making it invalid: G = 0, L = 0, D = 0, A = 0, C = 0, Wt = 0, U = 1, W = 1, V = 0
  *
  */
 Tutor> rd all
